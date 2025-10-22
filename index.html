@@ -199,9 +199,88 @@
       opacity: 0.7;
       font-style: italic;
     }
+
+    /* YENİ: Selection header styles */
+    .selection-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .selection-icon {
+      width: 24px;
+      height: 24px;
+    }
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+      margin-bottom: 4px;
+    }
+
+    /* YENİ: Ses kontrolü stilleri */
+    #volumeControl {
+      background: var(--panel-2);
+      padding: 4px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.04);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #volumeSlider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      outline: none;
+      width: 80px;
+      cursor: pointer;
+    }
+
+    #volumeSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+    }
+
+    #volumeSlider::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+      border: none;
+    }
+
+    #muteBtn {
+      background: none;
+      border: none;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+
+    #muteBtn:hover {
+      transform: scale(1.1);
+    }
   </style>
   <!-- Windows el yazısı fontları için -->
   <link href="https://fonts.googleapis.com/css2?family=Segoe+Print&display=swap" rel="stylesheet">
+
+<audio id="themeMusic1" loop>
+  <source src="assets/sounds/main_theme1.mp3" type="audio/mpeg">
+</audio>
+<audio id="themeMusic2" loop>
+  <source src="assets/sounds/main_theme2.mp3" type="audio/mpeg">
+</audio>
+
 </head>
 <body>
   <!-- YENİ: Loading Screen -->
@@ -224,6 +303,14 @@
     <div class="res"><img src="assets/icons/tas_icon.png" class="resource-icon" alt="Taş"><b>Taş</b> <span id="stone">100</span></div>
     <div class="res"><img src="assets/icons/altin_icon.png" class="resource-icon" alt="Altın"><b>Altın</b> <span id="gold">0</span></div>
     <div id="population">👥 <span id="popCur">0</span> / <span id="popMax">0</span></div>
+    
+    <!-- YENİ: Ses Kontrolü -->
+    <div id="volumeControl">
+        <button id="muteBtn">🔈</button>
+        <input type="range" id="volumeSlider" min="0" max="100" value="50">
+        <span id="volumePercent" style="font-size: 12px; min-width: 30px;">50%</span>
+    </div>
+    
     <div style="margin-left:auto; opacity:.8">RTS Step 6 – Deer Hunting</div>
   </div>
   <aside id="rightpanel">
@@ -318,15 +405,67 @@
 
     </div>
   </aside>
-  <div id="hint">WASD veya Ok Tuşları: Kamera • Scroll: Zoom • Sol Fare: Seçim • Sağ Fare: Seçili birimi hedefe gönder</div>
+  <div id="hint">WASD veya Ok Tuşları: Kamera • Scroll: Zoom • Sol Fare: Seçim • Sağ Fare: Seçili birimi hedefe gönder • M: Sessiz • Ctrl+↑/↓: Ses Aç/Kıs</div>
   <script>
     // YENİ: Loading Screen Kontrolü
     const loadingScreen = document.getElementById('loadingScreen');
     const progressFill = document.getElementById('progressFill');
     const loadingPercentage = document.getElementById('loadingPercentage');
-    
+
+    // YENİ: Müzik değişkenleri
+    let currentMusic = 1;
+    let isMusicPlaying = false;
+
+    // YENİ: Ses kontrol değişkenleri
+    let musicVolume = 0.5; // Varsayılan ses seviyesi (%50)
+    let isMuted = false;
+
+    function startGameMusic() {
+      if (isMusicPlaying) return;
+      
+      isMusicPlaying = true;
+      currentMusic = 1;
+      const music1 = document.getElementById('themeMusic1');
+      const music2 = document.getElementById('themeMusic2');
+      
+      // Ses seviyesini ayarla
+      music1.volume = isMuted ? 0 : musicVolume;
+      music2.volume = isMuted ? 0 : musicVolume;
+      
+      music1.play().then(() => {
+        console.log("Oyun müziği başladı: Theme 1");
+      }).catch(error => {
+        console.log("Müzik çalma hatası:", error);
+      });
+      
+      music1.addEventListener('ended', function() {
+        currentMusic = 2;
+        music2.play().then(() => {
+          console.log("Oyun müziği: Theme 2");
+        });
+      });
+      
+      music2.addEventListener('ended', function() {
+        currentMusic = 1;
+        music1.play().then(() => {
+          console.log("Oyun müziği: Theme 1");
+        });
+      });
+    }
+
+    function stopGameMusic() {
+      const music1 = document.getElementById('themeMusic1');
+      const music2 = document.getElementById('themeMusic2');
+      
+      music1.pause();
+      music2.pause();
+      music1.currentTime = 0;
+      music2.currentTime = 0;
+      isMusicPlaying = false;
+    }
+
     let loadingProgress = 0;
-    const totalLoadSteps = 10; // Toplam yükleme adımı
+    const totalLoadSteps = 10;
 
     function updateProgress(step) {
       loadingProgress = (step / totalLoadSteps) * 100;
@@ -338,12 +477,12 @@
           loadingScreen.classList.add('fade-out');
           setTimeout(() => {
             loadingScreen.style.display = 'none';
+            startGameMusic();
           }, 500);
         }, 500);
       }
     }
 
-    // Simüle edilmiş yükleme süreci
     function simulateLoading() {
       let step = 0;
       const interval = setInterval(() => {
@@ -352,12 +491,90 @@
         
         if (step >= totalLoadSteps) {
           clearInterval(interval);
+          setTimeout(() => {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(() => {
+              loadingScreen.style.display = 'none';
+              startGameMusic();
+            }, 500);
+          }, 500);
         }
       }, 300);
     }
 
-    // Sayfa yüklendiğinde yükleme ekranını başlat
-    window.addEventListener('load', simulateLoading);
+    // YENİ: Ses kontrol fonksiyonları
+    function setupVolumeControls() {
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumePercent = document.getElementById('volumePercent');
+        const muteBtn = document.getElementById('muteBtn');
+        
+        if (!volumeSlider || !volumePercent || !muteBtn) {
+            console.log("Ses kontrol elementleri bulunamadı");
+            return;
+        }
+        
+        // Ses seviyesi değiştiğinde
+        volumeSlider.addEventListener('input', function() {
+            musicVolume = this.value / 100;
+            updateVolume();
+            volumePercent.textContent = this.value + '%';
+        });
+        
+        // Sessiz butonu
+        muteBtn.addEventListener('click', function() {
+            isMuted = !isMuted;
+            updateVolume();
+            muteBtn.textContent = isMuted ? '🔇' : '🔈';
+        });
+        
+        // Klavye kısayolları
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'm' || e.key === 'M') {
+                // M tuşu: Sessiz/aç
+                e.preventDefault();
+                isMuted = !isMuted;
+                updateVolume();
+                muteBtn.textContent = isMuted ? '🔇' : '🔈';
+            } else if (e.key === 'ArrowUp' && e.ctrlKey) {
+                // Ctrl + Yukarı: Ses aç
+                e.preventDefault();
+                volumeSlider.value = Math.min(100, parseInt(volumeSlider.value) + 10);
+                musicVolume = volumeSlider.value / 100;
+                updateVolume();
+                volumePercent.textContent = volumeSlider.value + '%';
+            } else if (e.key === 'ArrowDown' && e.ctrlKey) {
+                // Ctrl + Aşağı: Ses kıs
+                e.preventDefault();
+                volumeSlider.value = Math.max(0, parseInt(volumeSlider.value) - 10);
+                musicVolume = volumeSlider.value / 100;
+                updateVolume();
+                volumePercent.textContent = volumeSlider.value + '%';
+            }
+        });
+    }
+
+    // Ses güncelleme fonksiyonu
+    function updateVolume() {
+        const music1 = document.getElementById('themeMusic1');
+        const music2 = document.getElementById('themeMusic2');
+        
+        if (music1 && music2) {
+            if (isMuted) {
+                music1.volume = 0;
+                music2.volume = 0;
+            } else {
+                music1.volume = musicVolume;
+                music2.volume = musicVolume;
+            }
+        }
+    }
+
+    window.addEventListener('load', function() {
+      simulateLoading();
+      setTimeout(() => {
+          setupVolumeControls();
+      }, 2000); // Loading ekranından sonra
+    });
 
     const canvas=document.getElementById('game');
     const ctx=canvas.getContext('2d');
@@ -380,10 +597,12 @@
       lastSelectedBuilding: null,
       lastResourceUpdate: 0,
       lastDeerUpdate: 0,
-      // YENİ: Savaş sisi değişkenleri
-      fogOfWar: [], // Savaş sisi haritası
-      explored: [], // Keşfedilmiş alanlar haritası
-      VISION_RANGE: 8 // Görüş mesafesi
+      // YENİ: Ağaç titreme efekti için
+      shakingTrees: new Set(),
+      // Savaş sisi değişkenleri
+      fogOfWar: [],
+      explored: [],
+      VISION_RANGE: 8
     };
 
     const TW=64, TH=32, MAP_W=50, MAP_H=50;
@@ -399,7 +618,6 @@
         type3: new Image()
     };
 
-    // Resim yollarını belirle
     treeImages.type1.src = 'assets/images/trees/tree1.png';
     treeImages.type2.src = 'assets/images/trees/tree2.png';
     treeImages.type3.src = 'assets/images/trees/tree3.png';
@@ -411,7 +629,6 @@
         type3: new Image()
     };
 
-    // Resim yollarını belirle - kendi görsellerinin isimlerini kullan
     stoneImages.type1.src = 'assets/images/stone/stone1.png';
     stoneImages.type2.src = 'assets/images/stone/stone2.png';
     stoneImages.type3.src = 'assets/images/stone/stone3.png';
@@ -422,7 +639,6 @@
         dead: new Image()
     };
 
-    // Resim yollarını belirle
     deerImages.alive.src = 'assets/images/deer/deer.png';
     deerImages.dead.src = 'assets/images/deer/dead_deer.png';
 
@@ -436,7 +652,6 @@
         stonehouse: new Image()
     };
 
-    // Görsel yollarını belirle
     buildingImages.town.src = 'assets/images/build/ana_ev.png';
     buildingImages.house1.src = 'assets/images/build/house1.png';
     buildingImages.house2.src = 'assets/images/build/house2.png';
@@ -455,7 +670,6 @@
         worker: new Image()
     };
 
-    // Seçim ikon yollarını belirle
     selectionIcons.tree.src = 'assets/icons/agac_icon.png';
     selectionIcons.town.src = 'assets/icons/ana_ev_icon.png';
     selectionIcons.deer.src = 'assets/icons/geyik_icon.png';
@@ -472,7 +686,6 @@
         stonehouse: new Image()
     };
 
-    // İnşa buton görsel yollarını belirle
     buildButtonImages.house.src = 'assets/images/build/house1.png';
     buildButtonImages.lumberhouse.src = 'assets/images/build/oduncu.png';
     buildButtonImages.hunterhouse.src = 'assets/images/build/avci_evi.png';
@@ -695,6 +908,47 @@
       }
       
       console.log(`${S.deer.length} geyik oluşturuldu`);
+    }
+
+    // YENİ: Ağaç titreme çizim fonksiyonu
+    function drawTreeWithShake(ctx, tree, sx, sy) {
+        let treeImage;
+        if(tree.type === 1) treeImage = treeImages.type1;
+        else if(tree.type === 2) treeImage = treeImages.type2;
+        else treeImage = treeImages.type3;
+        
+        // Titreme efekti
+        let shakeX = 0;
+        let shakeY = 0;
+        
+        if (S.shakingTrees.has(tree)) {
+            // Rastgele titreme (hafif)
+            shakeX = (Math.random() - 0.5) * 3 * S.cam.z;
+            shakeY = (Math.random() - 0.5) * 1.5 * S.cam.z;
+        }
+        
+        if(treeImage && treeImage.complete) {
+            ctx.drawImage(
+                treeImage, 
+                sx - 24*S.cam.z + shakeX,
+                sy - 48*S.cam.z + shakeY,
+                48*S.cam.z,
+                48*S.cam.z
+            );
+        } else {
+            ctx.font=`${24*S.cam.z}px serif`;
+            ctx.textAlign='center'; 
+            ctx.textBaseline='middle';
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillText('🌲', sx + shakeX, sy-4 + shakeY);
+        }
+
+        if(S.selection.has('tree_' + S.trees.indexOf(tree))) {
+            ctx.strokeStyle = 'cyan';
+            ctx.beginPath();
+            ctx.arc(sx + shakeX, sy - 24*S.cam.z + shakeY, 12*S.cam.z, 0, Math.PI*2);
+            ctx.stroke();
+        }
     }
 
     // Savaş sisi haritasını başlat
@@ -1310,21 +1564,23 @@
 
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
-      const zoomFactor = 1.2;
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      const wxBefore = (mouseX - canvas.width/2 + S.cam.x)/S.cam.z;
-      const wyBefore = (mouseY - canvas.height/2 + S.cam.y)/S.cam.z;
-
+      const zoomFactor = 1.1;
+      
+      // Mouse'un mevcut dünya koordinatlarını hesapla
+      const worldBefore = screenToIsoWorld(e.clientX, e.clientY);
+      
+      // Zoom yap
+      const oldZoom = S.cam.z;
       S.cam.z *= e.deltaY < 0 ? zoomFactor : 1/zoomFactor;
-      if(S.cam.z < 0.5) S.cam.z = 0.5;
-      if(S.cam.z > 1.5) S.cam.z = 1.5;
-
-      const wxAfter = (mouseX - canvas.width/2 + S.cam.x)/S.cam.z;
-      const wyAfter = (mouseY - canvas.height/2 + S.cam.y)/S.cam.z;
-      S.cam.x += (wxAfter - wxBefore)*S.cam.z;
-      S.cam.y += (wyAfter - wyBefore)*S.cam.z;
+      if(S.cam.z < 0.3) S.cam.z = 0.3;
+      if(S.cam.z > 2.0) S.cam.z = 2.0;
+      
+      // Zoom sonrası aynı dünya koordinatının ekran pozisyonunu hesapla
+      const screenAfter = isoToScreen(worldBefore.wx, worldBefore.wy);
+      
+      // Kamerayı ayarla - mouse pozisyonunu sabit tut
+      S.cam.x += e.clientX - screenAfter.x;
+      S.cam.y += e.clientY - screenAfter.y;
     });
 
     function sendWorkersToTree(tree, workers) {
@@ -1874,7 +2130,28 @@
       // Ağaçları güncelle
       for (let i = S.trees.length - 1; i >= 0; i--) {
         const tree = S.trees[i];
+        
+        // YENİ: Titreme efekti kontrolü
+        if (tree.wood > 0 && tree.choppingWorkers.length > 0) {
+          const activeWorkers = tree.choppingWorkers.filter(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            return worker && Math.hypot(worker.x - tree.x, worker.y - tree.y) < 1.5;
+          });
+          
+          if (activeWorkers.length > 0) {
+            // Titreme başlat
+            S.shakingTrees.add(tree);
+            
+            // 200ms sonra titremeyi durdur
+            setTimeout(() => {
+              S.shakingTrees.delete(tree);
+            }, 200);
+          }
+        }
+        
         if (tree.wood <= 0) {
+          // Ağaç bittiğinde titremeyi durdur
+          S.shakingTrees.delete(tree);
           tree.choppingWorkers.forEach(workerId => {
             const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
             if (worker) {
@@ -2041,13 +2318,21 @@
         if(deer.health > 0 && deer.huntingWorkers.length > 0) {
           deer.huntingWorkers.forEach(workerId => {
             const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
-            if (worker) {
-              // İşçi geyiği sürekli takip etsin
-              worker.tx = deer.x;
-              worker.ty = deer.y;
+            if (worker && worker.isHunting === deer) {
+              // DÜZELTİLDİ: İşçi sürekli geyiği takip etsin
+              // Sadece hedef değiştiğinde veya çok uzaktaysa güncelle
+              const distanceToDeer = Math.hypot(worker.x - deer.x, worker.y - deer.y);
+              
+              // Geyik hareket ettiyse veya işçi çok uzaktaysa hedefi güncelle
+              if (distanceToDeer > 1.5 || 
+                  Math.abs(worker.tx - deer.x) > 0.5 || 
+                  Math.abs(worker.ty - deer.y) > 0.5) {
+                worker.tx = deer.x;
+                worker.ty = deer.y;
+              }
               
               // Yakınsa saldır - 20 HASAR
-              if(Math.hypot(worker.x - deer.x, worker.y - deer.y) < 1.5) {
+              if(distanceToDeer < 1.5) {
                 deer.health = Math.max(0, deer.health - 20);
               }
             }
@@ -2365,33 +2650,8 @@
         switch(obj.type) {
           case 'tree':
             const tree = obj.data;
-            let treeImage;
-            if(tree.type === 1) treeImage = treeImages.type1;
-            else if(tree.type === 2) treeImage = treeImages.type2;
-            else treeImage = treeImages.type3;
-            
-            if(treeImage && treeImage.complete) {
-              ctx.drawImage(
-                treeImage, 
-                sx - 24*S.cam.z,
-                sy - 48*S.cam.z,
-                48*S.cam.z,
-                48*S.cam.z
-              );
-            } else {
-              ctx.font=`${24*S.cam.z}px serif`;
-              ctx.textAlign='center'; 
-              ctx.textBaseline='middle';
-              ctx.fillStyle = '#4CAF50';
-              ctx.fillText('🌲', sx, sy-4);
-            }
-
-            if(S.selection.has('tree_' + S.trees.indexOf(tree))) {
-              ctx.strokeStyle = 'cyan';
-              ctx.beginPath();
-              ctx.arc(sx, sy - 24*S.cam.z, 12*S.cam.z, 0, Math.PI*2);
-              ctx.stroke();
-            }
+            // YENİ: Titreme efekti ile ağaç çiz
+            drawTreeWithShake(ctx, tree, sx, sy);
             break;
             
           case 'stone':
@@ -2750,7 +3010,7 @@
               ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             } else {
               // Hiç keşfedilmemiş alan (siyah)
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+              ctx.fillStyle = 'rgba(0, 0, 0, 1)';
             }
             ctx.fill();
           }
