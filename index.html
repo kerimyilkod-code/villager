@@ -1,0 +1,2904 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RTS Step 6 – Deer Hunting</title>
+  <style>
+    :root{ --bg:#0e1020; --panel:#161a33; --panel-2:#1a1f3d; --ink:#e9ecff; }
+    html,body{height:100%; margin:0; background:var(--bg); color:var(--ink); font-family:Inter,system-ui,Segoe UI,Roboto,Arial; overflow:hidden}
+    #topbar{position:fixed; top:8px; left:8px; right:8px; display:flex; align-items:center; gap:10px; z-index:10; padding:8px; border-radius:14px; background:linear-gradient(180deg,var(--panel),#11152a); box-shadow:0 10px 30px rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.06);}
+    .res{background:var(--panel-2); padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.04); min-width:84px; text-align:center}
+    .res b{display:block; font-size:12px; opacity:.85}
+    .res span{font-weight:700}
+    #population{background:var(--panel-2); padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.04); min-width:120px; text-align:center}
+    #rightpanel{position:fixed; right:8px; top:64px; width:280px; bottom:8px; display:flex; flex-direction:column; gap:10px; z-index:9;
+      pointer-events: none;
+    }
+    .card{background:linear-gradient(180deg,var(--panel),#0f1330); padding:12px; border-radius:16px; border:1px solid rgba(255,255,255,.06);
+      pointer-events: auto;
+    }
+    .title{font-weight:700; margin-bottom:8px}
+    .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+    .btn{cursor:pointer; padding:8px; border-radius:10px; text-align:center; background:#222853; border:1px solid rgba(255,255,255,.06); color:var(--ink)}
+    #game{position:absolute; inset:0;}
+    #hint{position:fixed; left:8px; bottom:8px; font-size:12px; opacity:.9; background:rgba(0,0,0,.25); padding:6px 8px; border-radius:8px}
+    
+    .health-bar-container, .wood-bar-container, .stone-bar-container, .deer-health-bar-container, .deer-meat-bar-container {
+      margin-top: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      padding: 2px;
+    }
+    .health-bar, .wood-bar, .stone-bar, .deer-health-bar, .deer-meat-bar {
+      height: 12px;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .health-bar { background: linear-gradient(90deg, #4CAF50, #8BC34A); }
+    .wood-bar { background: linear-gradient(90deg, #8B4513, #A0522D); }
+    .stone-bar { background: linear-gradient(90deg, #666666, #888888); }
+    .deer-health-bar { background: linear-gradient(90deg, #FF6B6B, #FF8E8E); }
+    .deer-meat-bar { background: linear-gradient(90deg, #FF9800, #FFC107); }
+    .health-text, .wood-text, .stone-text, .deer-health-text, .deer-meat-text {
+      font-size: 12px;
+      margin-top: 4px;
+      text-align: center;
+      opacity: 0.8;
+    }
+    
+    .construction-bar-container {
+      margin-top: 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      padding: 2px;
+    }
+    .construction-bar {
+      height: 8px;
+      background: linear-gradient(90deg, #FF9800, #FFC107);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .construction-text {
+      font-size: 11px;
+      margin-top: 2px;
+      text-align: center;
+      opacity: 0.8;
+    }
+    
+    /* YENİ: Resource icon styles */
+    .resource-icon {
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    
+    .worker-resource {
+      margin-top: 6px;
+      font-size: 11px;
+      text-align: center;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    /* YENİ: Loading Screen Styles */
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0e1020, #1a1f3d);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.5s ease;
+    }
+
+    #loadingScreen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .game-title {
+      font-family: 'Segoe Print', 'Bradley Hand', 'Brush Script MT', cursive;
+      font-size: 5rem;
+      font-weight: bold;
+      background: linear-gradient(45deg, #FFD700, #FFA500, #FF8C00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+      margin-bottom: 2rem;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+      }
+      to {
+        text-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.6);
+      }
+    }
+
+    .loading-container {
+      width: 300px;
+      background: rgba(22, 26, 51, 0.8);
+      border-radius: 15px;
+      padding: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .loading-text {
+      text-align: center;
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      color: #e9ecff;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A, #FFD700);
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        left: -100%;
+      }
+      100% {
+        left: 100%;
+      }
+    }
+
+    .loading-percentage {
+      text-align: center;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      color: #e9ecff;
+      opacity: 0.8;
+    }
+
+    .game-hint {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #e9ecff;
+      opacity: 0.7;
+      font-style: italic;
+    }
+  </style>
+  <!-- Windows el yazısı fontları için -->
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+Print&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- YENİ: Loading Screen -->
+  <div id="loadingScreen">
+    <div class="game-title">Villager</div>
+    <div class="loading-container">
+      <div class="loading-text">Oyun Yükleniyor...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="loading-percentage" id="loadingPercentage">%0</div>
+    </div>
+    <div class="game-hint">Kaynakları topla, binalar inşa et, köyünü büyüt!</div>
+  </div>
+
+  <canvas id="game"></canvas>
+  <div id="topbar">
+    <div class="res"><img src="assets/icons/et_icon.png" class="resource-icon" alt="Yiyecek"><b>Yiyecek</b> <span id="food">100</span></div>
+    <div class="res"><img src="assets/icons/odun_icon.png" class="resource-icon" alt="Odun"><b>Odun</b> <span id="wood">200</span></div>
+    <div class="res"><img src="assets/icons/tas_icon.png" class="resource-icon" alt="Taş"><b>Taş</b> <span id="stone">100</span></div>
+    <div class="res"><img src="assets/icons/altin_icon.png" class="resource-icon" alt="Altın"><b>Altın</b> <span id="gold">0</span></div>
+    <div id="population">👥 <span id="popCur">0</span> / <span id="popMax">0</span></div>
+    <div style="margin-left:auto; opacity:.8">RTS Step 6 – Deer Hunting</div>
+  </div>
+  <aside id="rightpanel">
+    <div class="card" id="selectionCard">
+      <div class="title">Seçili Nesne</div>
+      <div id="selectionInfo">Hiçbir şey seçili değil.</div>
+      <div id="healthContainer" style="display:none;">
+        <div class="health-text">Sağlık: <span id="healthPercent">100</span>%</div>
+        <div class="health-bar-container">
+          <div class="health-bar" id="healthBar" style="width:100%"></div>
+        </div>
+      </div>
+      <div id="woodContainer" style="display:none;">
+        <div class="wood-text">Odun: <span id="woodAmount">0</span>/200</div>
+        <div class="wood-bar-container">
+          <div class="wood-bar" id="woodBar" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="stoneContainer" style="display:none;">
+        <div class="stone-text">Taş: <span id="stoneAmount">0</span>/200</div>
+        <div class="stone-bar-container">
+          <div class="stone-bar" id="stoneBar" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="deerHealthContainer" style="display:none;">
+        <div class="deer-health-text">Can: <span id="deerHealthAmount">0</span>/200</div>
+        <div class="deer-health-bar-container">
+          <div class="deer-health-bar" id="deerHealthBar" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="deerMeatContainer" style="display:none;">
+        <div class="deer-meat-text">Et: <span id="deerMeatAmount">0</span>/200</div>
+        <div class="deer-meat-bar-container">
+          <div class="deer-meat-bar" id="deerMeatBar" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="constructionContainer" style="display:none;">
+        <div class="construction-text">İnşaat: <span id="constructionPercent">0</span>%</div>
+        <div class="construction-bar-container">
+          <div class="construction-bar" id="constructionBar" style="width:0%"></div>
+        </div>
+      </div>
+      
+      <div id="workerResourceContainer" style="display:none;">
+        <div class="worker-resource">
+          <img src="assets/icons/odun_icon.png" class="resource-icon" alt="Odun">
+          Taşıdığı Odun: <span id="workerWood">0</span>
+        </div>
+        <div class="worker-resource">
+          <img src="assets/icons/tas_icon.png" class="resource-icon" alt="Taş">
+          Taşıdığı Taş: <span id="workerStone">0</span>
+        </div>
+        <div class="worker-resource">
+          <img src="assets/icons/et_icon.png" class="resource-icon" alt="Et">
+          Taşıdığı Et: <span id="workerMeat">0</span>
+        </div>
+      </div>
+      
+      <div id="spawnBtnContainer" style="margin-top:8px;"></div>
+    </div>
+    <div class="card" id="commandCard" style="display:none;">
+      <div class="title">Komutlar</div>
+      <div class="grid">
+        <div class="btn" id="buildBtn">
+          <img src="assets/icons/insa_icon.png" class="btn-icon" alt="İnşa">
+          <div class="btn-text">İnşa</div>
+        </div>
+        <div class="btn" id="gatherBtn">Topla</div>
+        <div class="btn" id="patrolBtn">Devriye</div>
+      </div>
+
+      <div id="buildMenu" style="margin-top:8px; display:none;">
+        <div class="grid">
+          <div class="btn" id="buildHouseBtn">
+            <img src="assets/icons/house_icon.png" class="btn-icon" alt="Ev">
+            <div class="btn-text">Ev</div>
+          </div>
+          <div class="btn" id="buildLumberhouseBtn">
+            <img src="assets/icons/oduncu_icon.png" class="btn-icon" alt="Oduncu Evi">
+            <div class="btn-text">Oduncu Evi</div>
+          </div>
+          <div class="btn" id="buildHunterhouseBtn">
+            <img src="assets/icons/avci_evi_icon.png" class="btn-icon" alt="Avcı Evi">
+            <div class="btn-text">Avcı Evi</div>
+          </div>
+          <div class="btn" id="buildStonehouseBtn">
+            <img src="assets/icons/tas_evi_icon.png" class="btn-icon" alt="Taş Ocağı">
+            <div class="btn-text">Taş Ocağı</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+  <div id="hint">WASD veya Ok Tuşları: Kamera • Scroll: Zoom • Sol Fare: Seçim • Sağ Fare: Seçili birimi hedefe gönder</div>
+  <script>
+    // YENİ: Loading Screen Kontrolü
+    const loadingScreen = document.getElementById('loadingScreen');
+    const progressFill = document.getElementById('progressFill');
+    const loadingPercentage = document.getElementById('loadingPercentage');
+    
+    let loadingProgress = 0;
+    const totalLoadSteps = 10; // Toplam yükleme adımı
+
+    function updateProgress(step) {
+      loadingProgress = (step / totalLoadSteps) * 100;
+      progressFill.style.width = loadingProgress + '%';
+      loadingPercentage.textContent = '%' + Math.round(loadingProgress);
+      
+      if (step >= totalLoadSteps) {
+        setTimeout(() => {
+          loadingScreen.classList.add('fade-out');
+          setTimeout(() => {
+            loadingScreen.style.display = 'none';
+          }, 500);
+        }, 500);
+      }
+    }
+
+    // Simüle edilmiş yükleme süreci
+    function simulateLoading() {
+      let step = 0;
+      const interval = setInterval(() => {
+        step++;
+        updateProgress(step);
+        
+        if (step >= totalLoadSteps) {
+          clearInterval(interval);
+        }
+      }, 300);
+    }
+
+    // Sayfa yüklendiğinde yükleme ekranını başlat
+    window.addEventListener('load', simulateLoading);
+
+    const canvas=document.getElementById('game');
+    const ctx=canvas.getContext('2d');
+    let S={
+      buildMode: null,
+      cam: {x:0,y:0,z:1},
+      mouse: {x:0,y:0,wx:0,wy:0},
+      dragging: false,
+      dragStart: {x:0,y:0},
+      keys: {},
+      map: [], walk: [],
+      entities: [],
+      trees: [],
+      stones: [],
+      deer: [],
+      selection: new Set(),
+      res: {food:100, wood:200, stone:100, gold:0},
+      uid: 0,
+      lastConstructionUpdate: 0,
+      lastSelectedBuilding: null,
+      lastResourceUpdate: 0,
+      lastDeerUpdate: 0,
+      // YENİ: Savaş sisi değişkenleri
+      fogOfWar: [], // Savaş sisi haritası
+      explored: [], // Keşfedilmiş alanlar haritası
+      VISION_RANGE: 8 // Görüş mesafesi
+    };
+
+    const TW=64, TH=32, MAP_W=50, MAP_H=50;
+    const T_GRASS=0;
+
+    function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+    window.addEventListener('resize',resize); resize();
+
+    // Ağaç resimlerini yükle
+    const treeImages = {
+        type1: new Image(),
+        type2: new Image(), 
+        type3: new Image()
+    };
+
+    // Resim yollarını belirle
+    treeImages.type1.src = 'assets/images/trees/tree1.png';
+    treeImages.type2.src = 'assets/images/trees/tree2.png';
+    treeImages.type3.src = 'assets/images/trees/tree3.png';
+
+    // Taş resimlerini yükle
+    const stoneImages = {
+        type1: new Image(),
+        type2: new Image(),
+        type3: new Image()
+    };
+
+    // Resim yollarını belirle - kendi görsellerinin isimlerini kullan
+    stoneImages.type1.src = 'assets/images/stone/stone1.png';
+    stoneImages.type2.src = 'assets/images/stone/stone2.png';
+    stoneImages.type3.src = 'assets/images/stone/stone3.png';
+
+    // Geyik resimlerini yükle
+    const deerImages = {
+        alive: new Image(),
+        dead: new Image()
+    };
+
+    // Resim yollarını belirle
+    deerImages.alive.src = 'assets/images/deer/deer.png';
+    deerImages.dead.src = 'assets/images/deer/dead_deer.png';
+
+    // YENİ: Bina görsellerini yükle
+    const buildingImages = {
+        town: new Image(),
+        house1: new Image(),
+        house2: new Image(),
+        lumberhouse: new Image(),
+        hunterhouse: new Image(),
+        stonehouse: new Image()
+    };
+
+    // Görsel yollarını belirle
+    buildingImages.town.src = 'assets/images/build/ana_ev.png';
+    buildingImages.house1.src = 'assets/images/build/house1.png';
+    buildingImages.house2.src = 'assets/images/build/house2.png';
+    buildingImages.lumberhouse.src = 'assets/images/build/oduncu.png';
+    buildingImages.hunterhouse.src = 'assets/images/build/avci_evi.png';
+    buildingImages.stonehouse.src = 'assets/images/build/tas_evi.png';
+
+    // YENİ: Seçim ikonlarını yükle
+    const selectionIcons = {
+        tree: new Image(),
+        town: new Image(),
+        deer: new Image(),
+        lumberhouse: new Image(),
+        stonehouse: new Image(),
+        house: new Image(),
+        worker: new Image()
+    };
+
+    // Seçim ikon yollarını belirle
+    selectionIcons.tree.src = 'assets/icons/agac_icon.png';
+    selectionIcons.town.src = 'assets/icons/ana_ev_icon.png';
+    selectionIcons.deer.src = 'assets/icons/geyik_icon.png';
+    selectionIcons.lumberhouse.src = 'assets/icons/oduncu_icon.png';
+    selectionIcons.stonehouse.src = 'assets/icons/tas_evi_icon.png';
+    selectionIcons.house.src = 'assets/icons/house_icon.png';
+    selectionIcons.worker.src = 'assets/icons/isci_icon.png';
+
+    // YENİ: İnşa buton görsellerini yükle
+    const buildButtonImages = {
+        house: new Image(),
+        lumberhouse: new Image(),
+        hunterhouse: new Image(),
+        stonehouse: new Image()
+    };
+
+    // İnşa buton görsel yollarını belirle
+    buildButtonImages.house.src = 'assets/images/build/house1.png';
+    buildButtonImages.lumberhouse.src = 'assets/images/build/oduncu.png';
+    buildButtonImages.hunterhouse.src = 'assets/images/build/avci_evi.png';
+    buildButtonImages.stonehouse.src = 'assets/images/build/tas_evi.png';
+
+    function isoToScreen(wx,wy){
+      const x=(wx-wy)*(TW/2)*S.cam.z + canvas.width/2 - S.cam.x;
+      const y=(wx+wy)*(TH/2)*S.cam.z + canvas.height/2 - S.cam.y;
+      return {x,y};
+    }
+    function screenToIsoWorld(sx,sy){
+      const cx=sx-canvas.width/2+S.cam.x;
+      const cy=sy-canvas.height/2+S.cam.y;
+      const wx=((cx/S.cam.z)/(TW/2)+(cy/S.cam.z)/(TH/2))/2;
+      const wy=((cy/S.cam.z)/(TH/2)-(cx/S.cam.z)/(TW/2))/2;
+      return {wx,wy};
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function randomFloat(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function generateTrees() {
+      S.trees = [];
+      const totalTrees = 80;
+
+      // ANA EVİN ETRAFINDA GÜVENLİ BÖLGE - DEĞİŞTİRİLDİ (daha az uzak)
+      const TOWN_SAFE_RADIUS = 5; // Ana evden 5 birim uzakta olsunlar (8'den 5'e düşürüldü)
+      const TOWN_X = 10, TOWN_Y = 10; // Ana ev konumu
+      
+      const clusters = 12; //KÜME (GRUP) adedi
+      for (let i = 0; i < clusters; i++) {
+        let clusterX, clusterY;
+        let attempts = 0;
+        
+        // Ana evden uzak küme merkezi bul
+        do {
+          clusterX = randomInt(3, MAP_W - 4); // Sınırları daralttık
+          clusterY = randomInt(3, MAP_H - 4);
+          attempts++;
+        } while (Math.hypot(clusterX - TOWN_X, clusterY - TOWN_Y) < TOWN_SAFE_RADIUS && attempts < 50);
+        
+        const clusterSize = randomInt(30, 50);   // kümedeki ağaç sayısı
+        
+        for (let j = 0; j < clusterSize; j++) {
+          const x = clusterX + randomInt(-3, 3);
+          const y = clusterY + randomInt(-3, 3);
+          
+          // Ağaçların harita sınırları ve ana evden uzak olmasını sağla
+          if (x >= 2 && x < MAP_W - 2 && 
+              y >= 2 && y < MAP_H - 2 &&
+              Math.hypot(x - TOWN_X, y - TOWN_Y) >= TOWN_SAFE_RADIUS) {
+          
+            const tooClose = S.trees.some(tree => 
+              Math.abs(tree.x - x) < 1 && Math.abs(tree.y - y) < 1
+            );
+            
+            if (!tooClose) {
+              S.trees.push({
+                x: x,
+                y: y,
+                type: randomInt(1, 3),
+                wood: 200,
+                isBeingChopped: false,
+                choppingWorkers: []
+              });
+            }
+          }
+        }
+      }
+      
+      const scatteredTrees = 80;   // ... dağınık ağaç sayısı
+      for (let i = 0; i < scatteredTrees; i++) {
+        let x, y;
+        let attempts = 0;
+        
+        // Ana evden uzak dağınık ağaçlar
+        do {
+          x = randomInt(2, MAP_W - 3); // Sınırları daralttık
+          y = randomInt(2, MAP_H - 3);
+          attempts++;
+        } while (Math.hypot(x - TOWN_X, y - TOWN_Y) < TOWN_SAFE_RADIUS && attempts < 50);
+        
+        const tooClose = S.trees.some(tree => 
+          Math.abs(tree.x - x) < 2 && Math.abs(tree.y - y) < 2
+        );
+        
+        if (!tooClose) {
+          S.trees.push({
+            x: x,
+            y: y,
+            type: randomInt(1, 3),
+            wood: 200,
+            isBeingChopped: false,
+            choppingWorkers: []
+          });
+        }
+      }
+    }
+
+    function generateStones() {
+      S.stones = [];
+      const totalStones = 4;
+      
+      // ANA EVİN ETRAFINDA GÜVENLİ BÖLGE - DEĞİŞTİRİLDİ (daha az uzak)
+      const TOWN_SAFE_RADIUS = 5; // 8'den 5'e düşürüldü
+      const TOWN_X = 10, TOWN_Y = 10;
+      
+      for (let i = 0; i < totalStones; i++) {
+        let placed = false;
+        let attempts = 0;
+        
+        while (!placed && attempts < 100) {
+          const x = randomInt(3, MAP_W - 4); // Sınırları daralttık
+          const y = randomInt(3, MAP_H - 4);
+          
+          // Ana evden uzak olma kontrolü EKLENDİ
+          const tooCloseToTown = Math.hypot(x - TOWN_X, y - TOWN_Y) < TOWN_SAFE_RADIUS;
+          const tooCloseToTree = S.trees.some(tree => 
+            Math.abs(tree.x - x) < 3 && Math.abs(tree.y - y) < 3
+          );
+          
+          const tooCloseToOtherStone = S.stones.some(stone => 
+            Math.abs(stone.x - x) < 5 && Math.abs(stone.y - y) < 5
+          );
+          
+          if (!tooCloseToTown && !tooCloseToTree && !tooCloseToOtherStone) {
+            S.stones.push({
+              x: x,
+              y: y,
+              type: randomInt(1, 3),
+              stone: 200,
+              isBeingMined: false,
+              miningWorkers: []
+            });
+            placed = true;
+          }
+          
+          attempts++;
+        }
+      }
+    }
+
+    function generateDeer() {
+      S.deer = [];
+      const herdCount = 5;
+      const deerPerHerd = 5;
+      
+      console.log("Geyikler oluşturuluyor...");
+      
+      // ANA EVİN ETRAFINDA GÜVENLİ BÖLGE - DEĞİŞTİRİLDİ (daha az uzak)
+      const TOWN_SAFE_RADIUS = 6; // Geyikler 6 birim uzakta olsun (10'dan 6'ya düşürüldü)
+      const TOWN_X = 10, TOWN_Y = 10;
+      
+      for (let herd = 0; herd < herdCount; herd++) {
+        let placedHerd = false;
+        let attempts = 0;
+        
+        while (!placedHerd && attempts < 100) {
+          const herdCenterX = randomInt(8, MAP_W - 9); // Sınırları daralttık
+          const herdCenterY = randomInt(8, MAP_H - 9);
+          
+          // Ana evden uzak olma kontrolü EKLENDİ
+          const tooCloseToTown = Math.hypot(herdCenterX - TOWN_X, herdCenterY - TOWN_Y) < TOWN_SAFE_RADIUS;
+          const tooCloseToTree = S.trees.some(tree => 
+            Math.abs(tree.x - herdCenterX) < 4 && Math.abs(tree.y - herdCenterY) < 4
+          );
+          
+          const tooCloseToStone = S.stones.some(stone => 
+            Math.abs(stone.x - herdCenterX) < 4 && Math.abs(stone.y - herdCenterY) < 4
+          );
+          
+          const tooCloseToOtherHerd = S.deer.some(deer => 
+            Math.abs(deer.herdCenterX - herdCenterX) < 10 && Math.abs(deer.herdCenterY - herdCenterY) < 10
+          );
+          
+          if (!tooCloseToTown && !tooCloseToTree && !tooCloseToStone && !tooCloseToOtherHerd) {
+            for (let i = 0; i < deerPerHerd; i++) {
+              const wanderRadius = 4;
+              const x = herdCenterX + randomFloat(-wanderRadius, wanderRadius);
+              const y = herdCenterY + randomFloat(-wanderRadius, wanderRadius);
+              
+              S.deer.push({
+                id: nextId(),
+                x: Math.max(1, Math.min(MAP_W-1, x)),
+                y: Math.max(1, Math.min(MAP_H-1, y)),
+                herdCenterX: herdCenterX,
+                herdCenterY: herdCenterY,
+                wanderRadius: wanderRadius,
+                tx: x,
+                ty: y,
+                state: 'idle',
+                stateTimer: randomInt(5000, 10000),
+                speed: 0.5,
+                lastMoveTime: 0,
+                health: 200,
+                maxHealth: 200,
+                meat: 200,
+                maxMeat: 200,
+                isBeingHunted: false,
+                huntingWorkers: [],
+                isFleeing: false,
+                fleeTarget: null,
+                normalState: 'idle',
+                normalStateTimer: 0,
+                isDead: false,
+                direction: 1 // 1: sağa, -1: sola
+              });
+            }
+            placedHerd = true;
+            console.log(`Sürü ${herd+1} konumu: (${herdCenterX}, ${herdCenterY})`);
+          }
+          
+          attempts++;
+        }
+      }
+      
+      console.log(`${S.deer.length} geyik oluşturuldu`);
+    }
+
+    // Savaş sisi haritasını başlat
+    function initFogOfWar() {
+      S.fogOfWar = [];
+      S.explored = [];
+      for(let y = 0; y < MAP_H; y++) {
+        S.fogOfWar[y] = [];
+        S.explored[y] = [];
+        for(let x = 0; x < MAP_W; x++) {
+          S.fogOfWar[y][x] = true; // Başlangıçta her yer kapalı
+          S.explored[y][x] = false; // Hiçbir yer keşfedilmemiş
+        }
+      }
+      
+      // Ana ev etrafını aç
+      const TOWN_X = 10, TOWN_Y = 10;
+      for(let y = TOWN_Y - 5; y <= TOWN_Y + 5; y++) {
+        for(let x = TOWN_X - 5; x <= TOWN_X + 5; x++) {
+          if(x >= 0 && x < MAP_W && y >= 0 && y < MAP_H) {
+            S.fogOfWar[y][x] = false;
+            S.explored[y][x] = true;
+          }
+        }
+      }
+    }
+
+    function updateFogOfWar() {
+      // Önce tüm görüş alanını kapat (keşfedilmiş yerler hariç)
+      for(let y = 0; y < MAP_H; y++) {
+        for(let x = 0; x < MAP_W; x++) {
+          if(S.explored[y][x]) {
+            S.fogOfWar[y][x] = true; // Keşfedilmiş ama şu an görünmeyen
+          }
+        }
+      }
+      
+      // İşçilerin görüş alanını aç
+      S.entities.forEach(entity => {
+        if(entity.kind === 'worker') {
+          updateVisionAt(entity.x, entity.y);
+        }
+      });
+      
+      // Binaların görüş alanını aç (inşaat halinde olmayan)
+      S.entities.forEach(entity => {
+        if((entity.kind === 'town' || entity.kind === 'house1' || entity.kind === 'house2' || 
+            entity.kind === 'lumberhouse' || entity.kind === 'hunterhouse' || entity.kind === 'stonehouse') &&
+            !entity.isUnderConstruction) {
+          updateVisionAt(entity.x, entity.y);
+        }
+      });
+    }
+
+    function updateVisionAt(centerX, centerY) {
+      const range = S.VISION_RANGE;
+      for(let y = Math.max(0, Math.floor(centerY - range)); y <= Math.min(MAP_H-1, Math.floor(centerY + range)); y++) {
+        for(let x = Math.max(0, Math.floor(centerX - range)); x <= Math.min(MAP_W-1, Math.floor(centerX + range)); x++) {
+          const dist = Math.hypot(x - centerX, y - centerY);
+          if(dist <= range) {
+            S.fogOfWar[y][x] = false;
+            S.explored[y][x] = true;
+          }
+        }
+      }
+    }
+
+    function findNearestWorker(x, y) {
+      const workers = S.entities.filter(e => e.kind === 'worker');
+      if (workers.length === 0) return null;
+      
+      let nearest = workers[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < workers.length; i++) {
+        const dist = Math.hypot(workers[i].x - x, workers[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = workers[i];
+        }
+      }
+      
+      return { worker: nearest, distance: minDist };
+    }
+
+    function updateDeerBehavior(timestamp) {
+      if (!S.lastDeerUpdate) S.lastDeerUpdate = timestamp;
+      if (timestamp - S.lastDeerUpdate < 100) return;
+      
+      S.deer.forEach(deer => {
+        // Ölü geyikler hareket etmez
+        if (deer.isDead) {
+          deer.state = 'dead';
+          deer.tx = deer.x;
+          deer.ty = deer.y;
+          return;
+        }
+        
+        if (!deer.lastMoveTime) deer.lastMoveTime = timestamp;
+        
+        // İşçi kontrolü - kaçış davranışı
+        const nearestWorker = findNearestWorker(deer.x, deer.y);
+        const FLEE_DISTANCE = 8;
+        const RETURN_DISTANCE = 12;
+        
+        if (nearestWorker && nearestWorker.distance < FLEE_DISTANCE && !deer.isFleeing) {
+          // Kaçış moduna geç
+          deer.isFleeing = true;
+          deer.normalState = deer.state;
+          deer.normalStateTimer = deer.stateTimer;
+          
+          // İşçiden uzaklaşacak şekilde hedef belirle
+          const angle = Math.atan2(deer.y - nearestWorker.worker.y, deer.x - nearestWorker.worker.x);
+          const fleeDistance = 15;
+          deer.tx = deer.x + Math.cos(angle) * fleeDistance;
+          deer.ty = deer.y + Math.sin(angle) * fleeDistance;
+          
+          // Harita sınırları içinde kal
+          deer.tx = Math.max(1, Math.min(MAP_W-1, deer.tx));
+          deer.ty = Math.max(1, Math.min(MAP_H-1, deer.ty));
+          
+        } else if (deer.isFleeing && (!nearestWorker || nearestWorker.distance > RETURN_DISTANCE)) {
+          // Güvende, normal duruma dön
+          deer.isFleeing = false;
+          deer.state = deer.normalState;
+          deer.stateTimer = deer.normalStateTimer;
+          deer.tx = deer.x;
+          deer.ty = deer.y;
+        }
+        
+        // Kaçış durumu - ÖNCELİKLİ
+        if (deer.isFleeing && !deer.isDead) {
+          const dx = deer.tx - deer.x;
+          const dy = deer.ty - deer.y;
+          const dist = Math.hypot(dx, dy);
+          
+          if (dist > 0.1) {
+            // Alternatif basit çözüm - her hareket adımında yönü güncelle
+            const moveAngle = Math.atan2(dy, dx);
+            deer.direction = Math.abs(moveAngle) < Math.PI/2 ? 1 : -1;
+            
+            const moveX = (dx / dist) * 0.015;
+            const moveY = (dy / dist) * 0.015;
+            
+            deer.x += moveX;
+            deer.y += moveY;
+          } else {
+            // Kaçış hedefine ulaştı, beklemeye geç
+            deer.tx = deer.x;
+            deer.ty = deer.y;
+          }
+        } 
+        // Normal davranış (kaçmıyorsa ve ölü değilse)
+        else if (!deer.isFleeing && !deer.isDead) {
+          const timeSinceLastMove = timestamp - deer.lastMoveTime;
+          
+          // Durum değiştirme kontrolü
+          if (timeSinceLastMove > deer.stateTimer) {
+            // Yeni durum seç
+            if (deer.state === 'idle') {
+              // Dinlenmeden sonra hareket et
+              deer.state = 'moving';
+              deer.stateTimer = randomInt(3000, 6000);
+              
+              // Yeni hedef belirle - sürü merkezi etrafında
+              const angle = Math.random() * Math.PI * 2;
+              const distance = randomFloat(2, 5);
+              deer.tx = deer.herdCenterX + Math.cos(angle) * distance;
+              deer.ty = deer.herdCenterY + Math.sin(angle) * distance;
+              
+              // Harita sınırları içinde kal
+              deer.tx = Math.max(1, Math.min(MAP_W-1, deer.tx));
+              deer.ty = Math.max(1, Math.min(MAP_H-1, deer.ty));
+              
+            } else {
+              // Hareketten sonra dinlen
+              deer.state = 'idle';
+              deer.stateTimer = randomInt(8000, 15000);
+              deer.tx = deer.x;
+              deer.ty = deer.y;
+            }
+            deer.lastMoveTime = timestamp;
+          }
+          
+          // Hareket durumunda hedefe doğru ilerle
+          if (deer.state === 'moving') {
+            const dx = deer.tx - deer.x;
+            const dy = deer.ty - deer.y;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist > 0.1) {
+              // Alternatif basit çözüm - her hareket adımında yönü güncelle
+              const moveAngle = Math.atan2(dy, dx);
+              deer.direction = Math.abs(moveAngle) < Math.PI/2 ? 1 : -1;
+              
+              const moveX = (dx / dist) * deer.speed * 0.03;
+              const moveY = (dy /dist) * deer.speed * 0.03;
+              
+              deer.x += moveX;
+              deer.y += moveY;
+              
+              // Sürü merkezinden çok uzaklaşmasın
+              const distToCenter = Math.hypot(deer.x - deer.herdCenterX, deer.y - deer.herdCenterY);
+              if (distToCenter > deer.wanderRadius * 2) {
+                // Merkeze doğru yön değiştir
+                const angleToCenter = Math.atan2(deer.herdCenterY - deer.y, deer.herdCenterX - deer.x);
+                deer.tx = deer.herdCenterX + Math.cos(angleToCenter) * randomFloat(1, 3);
+                deer.ty = deer.herdCenterY + Math.sin(angleToCenter) * randomFloat(1, 3);
+              }
+            } else {
+              // Hedefe ulaştı, dinlenmeye geç
+              deer.state = 'idle';
+              deer.stateTimer = randomInt(8000, 15000);
+            }
+          }
+        }
+      });
+      
+      S.lastDeerUpdate = timestamp;
+    }
+
+    function findNearestLumberhouse(x, y) {
+      const lumberhouses = S.entities.filter(e => e.kind === 'lumberhouse' && !e.isUnderConstruction);
+      if (lumberhouses.length === 0) return null;
+      
+      let nearest = lumberhouses[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < lumberhouses.length; i++) {
+        const dist = Math.hypot(lumberhouses[i].x - x, lumberhouses[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = lumberhouses[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    function findNearestStonehouse(x, y) {
+      const stonehouses = S.entities.filter(e => e.kind === 'stonehouse' && !e.isUnderConstruction);
+      if (stonehouses.length === 0) return null;
+      
+      let nearest = stonehouses[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < stonehouses.length; i++) {
+        const dist = Math.hypot(stonehouses[i].x - x, stonehouses[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = stonehouses[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    function findNearestHunterhouse(x, y) {
+      const hunterhouses = S.entities.filter(e => e.kind === 'hunterhouse' && !e.isUnderConstruction);
+      if (hunterhouses.length === 0) return null;
+      
+      let nearest = hunterhouses[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < hunterhouses.length; i++) {
+        const dist = Math.hypot(hunterhouses[i].x - x, hunterhouses[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = hunterhouses[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    function findNearestTree(x, y) {
+      const availableTrees = S.trees.filter(tree => tree.wood > 0);
+      if (availableTrees.length === 0) return null;
+      
+      let nearest = availableTrees[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < availableTrees.length; i++) {
+        const dist = Math.hypot(availableTrees[i].x - x, availableTrees[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = availableTrees[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    function findNearestStone(x, y) {
+      const availableStones = S.stones.filter(stone => stone.stone > 0);
+      if (availableStones.length === 0) return null;
+      
+      let nearest = availableStones[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < availableStones.length; i++) {
+        const dist = Math.hypot(availableStones[i].x - x, availableStones[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = availableStones[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    function findNearestDeer(x, y) {
+      const availableDeer = S.deer.filter(deer => !deer.isDead);
+      if (availableDeer.length === 0) return null;
+      
+      let nearest = availableDeer[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < availableDeer.length; i++) {
+        const dist = Math.hypot(availableDeer[i].x - x, availableDeer[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = availableDeer[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    function findNearestDeadDeer(x, y) {
+      const deadDeer = S.deer.filter(deer => deer.isDead && deer.meat > 0);
+      if (deadDeer.length === 0) return null;
+      
+      let nearest = deadDeer[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < deadDeer.length; i++) {
+        const dist = Math.hypot(deadDeer[i].x - x, deadDeer[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = deadDeer[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    function findNearestStorage(x, y, resourceType = 'wood') {
+      if (resourceType === 'wood') {
+        const lumberhouse = findNearestLumberhouse(x, y);
+        if (lumberhouse) return lumberhouse;
+      } else if (resourceType === 'stone') {
+        const stonehouse = findNearestStonehouse(x, y);
+        if (stonehouse) return stonehouse;
+      } else if (resourceType === 'meat') {
+        const hunterhouse = findNearestHunterhouse(x, y);
+        if (hunterhouse) return hunterhouse;
+      }
+      
+      const towns = S.entities.filter(e => e.kind === 'town' && !e.isUnderConstruction);
+      if (towns.length === 0) return null;
+      
+      let nearest = towns[0];
+      let minDist = Math.hypot(nearest.x - x, nearest.y - y);
+      
+      for (let i = 1; i < towns.length; i++) {
+        const dist = Math.hypot(towns[i].x - x, towns[i].y - y);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = towns[i];
+        }
+      }
+      
+      return nearest;
+    }
+
+    for(let y=0;y<MAP_H;y++){
+      S.map[y]=[]; S.walk[y]=[];
+      for(let x=0;x<MAP_W;x++){ S.map[y][x]=T_GRASS; S.walk[y][x]=true; }
+    }
+
+    // ÖNCE ANA EVI EKLE
+    S.entities.push({
+      id:1, 
+      kind:'town', 
+      x:10, y:10, 
+      health:100, 
+      maxHealth:100,
+      constructionProgress:100,
+      isUnderConstruction:false
+    });
+
+    // SONRA AĞAÇ, TAŞ VE GEYİKLERİ OLUŞTUR (ana evden uzak olacaklar)
+    generateTrees();
+    generateStones();
+    generateDeer();
+    initFogOfWar();
+
+    S.uid = Math.max(S.uid, ...S.entities.map(e => e.id), ...S.deer.map(d => d.id));
+
+    function nextId(){ S.uid+=1; return S.uid; }
+
+    // Kasaba merkezini ekranın ortasına getir
+    const townCenter = { x: 10, y: 10 };
+    const screenCenter = isoToScreen(townCenter.x, townCenter.y);
+
+    // Kamera pozisyonunu, kasaba merkezini ekranın ortasına gelecek şekilde ayarla
+    S.cam.x = screenCenter.x - canvas.width / 2;
+    S.cam.y = screenCenter.y - canvas.height / 2;
+
+    // DEĞİŞTİRİLDİ: Capslock'tan etkilenmeyen tuş kontrolü
+    window.addEventListener('keydown',e=>{ 
+      const key = e.key.toLowerCase();
+      S.keys[key]=true; 
+      
+      // Ok tuşları için ek kontrol
+      if (e.key === 'ArrowUp') S.keys['arrowup'] = true;
+      if (e.key === 'ArrowDown') S.keys['arrowdown'] = true;
+      if (e.key === 'ArrowLeft') S.keys['arrowleft'] = true;
+      if (e.key === 'ArrowRight') S.keys['arrowright'] = true;
+    });
+    
+    window.addEventListener('keyup',e=>{ 
+      const key = e.key.toLowerCase();
+      S.keys[key]=false; 
+      
+      // Ok tuşları için ek kontrol
+      if (e.key === 'ArrowUp') S.keys['arrowup'] = false;
+      if (e.key === 'ArrowDown') S.keys['arrowdown'] = false;
+      if (e.key === 'ArrowLeft') S.keys['arrowleft'] = false;
+      if (e.key === 'ArrowRight') S.keys['arrowright'] = false;
+    });
+
+    canvas.addEventListener('mousemove',e=>{
+      S.mouse.x=e.clientX; S.mouse.y=e.clientY;
+      const {wx,wy}=screenToIsoWorld(e.clientX,e.clientY);
+      S.mouse.wx=wx; S.mouse.wy=wy;
+    });
+    canvas.addEventListener('mousedown',e=>{
+      if(e.button===0){
+        if(S.buildMode){
+          const x=Math.floor(S.mouse.wx);
+          const y=Math.floor(S.mouse.wy);
+          
+          let canBuild = true;
+          
+          // Bina kontrolü
+          for(const entity of S.entities){
+            if(entity.kind === 'town' || entity.kind === 'house1' || entity.kind === 'house2' || 
+               entity.kind === 'lumberhouse' || entity.kind === 'hunterhouse' ||
+               entity.kind === 'stonehouse'){
+              if(Math.floor(entity.x) === x && Math.floor(entity.y) === y){
+                canBuild = false;
+                break;
+              }
+            }
+          }
+          
+          // Ağaç kontrolü
+          if(canBuild){
+            for(const tree of S.trees){
+              if(Math.floor(tree.x) === x && Math.floor(tree.y) === y){
+                canBuild = false;
+                break;
+              }
+            }
+          }
+          
+          // Taş kontrolü
+          if(canBuild){
+            for(const stone of S.stones){
+              if(Math.floor(stone.x) === x && Math.floor(stone.y) === y){
+                canBuild = false;
+                break;
+              }
+            }
+          }
+          
+          // Geyik kontrolü EKLENDİ
+          if(canBuild){
+            for(const deer of S.deer){
+              if(Math.floor(deer.x) === x && Math.floor(deer.y) === y){
+                canBuild = false;
+                break;
+              }
+            }
+          }
+          
+          let cost = 0;
+          if(S.buildMode==='house1' || S.buildMode==='house2' || S.buildMode==='lumberhouse' || S.buildMode==='hunterhouse'){
+            cost = 50;
+          } else if(S.buildMode==='stonehouse'){
+            cost = 75;
+          }
+          
+          if(canBuild && S.res.wood>=cost){
+            const newId=nextId();
+            // Artık rastgele seçime gerek yok, S.buildMode direkt kullan
+            S.entities.push({
+              id:newId, 
+              kind: S.buildMode, // Burada direkt S.buildMode'u kullan
+              x, y, 
+              health:100, 
+              maxHealth:100,
+              constructionProgress:0,
+              isUnderConstruction:true,
+              constructionWorkers:[]
+            });
+            S.res.wood-=cost;
+            updateTopBar();
+          }
+          S.buildMode=null;
+          return;
+        }
+        S.dragging=true;
+        S.dragStart={x:e.clientX,y:e.clientY};
+      }
+    });
+    canvas.addEventListener('mouseup',e=>{ if(e.button===0){ S.dragging=false; commitSelection(); } });
+    
+    // GÜNCELLENMİŞ: GENİŞLETİLMİŞ TIKLAMA ALANI - BİNA GÖRSELİNE TIKLAMA EKLENDİ
+    canvas.addEventListener('contextmenu',e=>{ 
+      e.preventDefault(); 
+      
+      const {wx,wy}=screenToIsoWorld(e.clientX,e.clientY);
+      
+      // GENİŞLETİLMİŞ TIKLAMA ALANI - grid kontrolü yerine görsel merkezine göre
+      let clickedTree = null;
+      let clickedStone = null;
+      let clickedDeer = null;
+      let clickedDeadDeer = null;
+      let clickedBuilding = null;
+      let clickedConstructionBuilding = null;
+      
+      // BİNALAR - GÖRSEL MERKEZİNE GÖRE KONTROL (DEĞİŞTİRİLDİ)
+      for(const entity of S.entities){
+        if(entity.kind === 'town' || entity.kind === 'house1' || entity.kind === 'house2' || 
+           entity.kind === 'lumberhouse' || entity.kind === 'hunterhouse' || entity.kind === 'stonehouse'){
+          
+          const s=isoToScreen(entity.x,entity.y);
+          const d=Math.hypot(e.clientX-s.x,e.clientY-s.y);
+          
+          // Bina görselinin merkezine tıklama (daha geniş alan)
+          if(d < 40) {
+            if(entity.isUnderConstruction){
+              clickedConstructionBuilding = entity;
+            } else {
+              clickedBuilding = entity;
+            }
+            break;
+          }
+        }
+      }
+      
+      // AĞAÇ - görsel merkezine göre kontrol
+      if(!clickedBuilding && !clickedConstructionBuilding){
+        for(const tree of S.trees){
+          const s=isoToScreen(tree.x,tree.y);
+          const d=Math.hypot(e.clientX-s.x,e.clientY-s.y);
+          if(d<40 && tree.wood > 0){
+            clickedTree = tree;
+            break;
+          }
+        }
+      }
+      
+      // TAŞ - görsel merkezine göre kontrol
+      if(!clickedBuilding && !clickedConstructionBuilding && !clickedTree){
+        for(const stone of S.stones){
+          const s=isoToScreen(stone.x,stone.y);
+          const d=Math.hypot(e.clientX-s.x,e.clientY-s.y);
+          if(d<40 && stone.stone > 0){
+            clickedStone = stone;
+            break;
+          }
+        }
+      }
+      
+      // GEYİK - görsel merkezine göre kontrol
+      if(!clickedBuilding && !clickedConstructionBuilding && !clickedTree && !clickedStone){
+        for(const deer of S.deer){
+          const s=isoToScreen(deer.x,deer.y);
+          const d=Math.hypot(e.clientX-s.x,e.clientY-s.y);
+          if(d<40){
+            if(!deer.isDead && deer.health > 0){
+              clickedDeer = deer;
+            } else if(deer.isDead && deer.meat > 0){
+              clickedDeadDeer = deer;
+            }
+            break;
+          }
+        }
+      }
+      
+      const selectedWorkers = [...S.selection].map(id => S.entities.find(e => e.id === id && e.kind === 'worker')).filter(Boolean);
+      
+      if(clickedTree && selectedWorkers.length > 0) {
+        sendWorkersToTree(clickedTree, selectedWorkers);
+      } else if(clickedStone && selectedWorkers.length > 0) {
+        sendWorkersToStone(clickedStone, selectedWorkers);
+      } else if(clickedDeer && selectedWorkers.length > 0) {
+        sendWorkersToDeer(clickedDeer, selectedWorkers);
+      } else if(clickedDeadDeer && selectedWorkers.length > 0) {
+        sendWorkersToDeadDeer(clickedDeadDeer, selectedWorkers);
+      } else if(clickedConstructionBuilding && selectedWorkers.length > 0) {
+        sendWorkersToConstruction(clickedConstructionBuilding, selectedWorkers);
+      } else if(clickedBuilding && selectedWorkers.length > 0) {
+        sendWorkersToBuilding(clickedBuilding, selectedWorkers);
+      } else {
+        rightClickMove();
+      }
+    });
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const zoomFactor = 1.2;
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const wxBefore = (mouseX - canvas.width/2 + S.cam.x)/S.cam.z;
+      const wyBefore = (mouseY - canvas.height/2 + S.cam.y)/S.cam.z;
+
+      S.cam.z *= e.deltaY < 0 ? zoomFactor : 1/zoomFactor;
+      if(S.cam.z < 0.5) S.cam.z = 0.5;
+      if(S.cam.z > 1.5) S.cam.z = 1.5;
+
+      const wxAfter = (mouseX - canvas.width/2 + S.cam.x)/S.cam.z;
+      const wyAfter = (mouseY - canvas.height/2 + S.cam.y)/S.cam.z;
+      S.cam.x += (wxAfter - wxBefore)*S.cam.z;
+      S.cam.y += (wyAfter - wyBefore)*S.cam.z;
+    });
+
+    function sendWorkersToTree(tree, workers) {
+      workers.forEach(worker => { 
+        worker.tx = tree.x; 
+        worker.ty = tree.y;
+        worker.isChopping = tree;
+        worker.isMining = null;
+        worker.isHunting = null;
+        worker.isCollectingMeat = null;
+        worker.isDelivering = false;
+        worker.carryingWood = worker.carryingWood || 0;
+        worker.carryingStone = worker.carryingStone || 0;
+        worker.carryingMeat = worker.carryingMeat || 0;
+        
+        if(!tree.choppingWorkers.includes(worker.id)) {
+          tree.choppingWorkers.push(worker.id);
+        }
+      });
+    }
+
+    function sendWorkersToStone(stone, workers) {
+      workers.forEach(worker => { 
+        worker.tx = stone.x; 
+        worker.ty = stone.y;
+        worker.isMining = stone;
+        worker.isChopping = null;
+        worker.isHunting = null;
+        worker.isCollectingMeat = null;
+        worker.isDelivering = false;
+        worker.carryingWood = worker.carryingWood || 0;
+        worker.carryingStone = worker.carryingStone || 0;
+        worker.carryingMeat = worker.carryingMeat || 0;
+        
+        if(!stone.miningWorkers.includes(worker.id)) {
+          stone.miningWorkers.push(worker.id);
+        }
+      });
+    }
+
+    function sendWorkersToDeer(deer, workers) {
+      workers.forEach(worker => { 
+        worker.tx = deer.x; 
+        worker.ty = deer.y;
+        worker.isHunting = deer;
+        worker.isChopping = null;
+        worker.isMining = null;
+        worker.isCollectingMeat = null;
+        worker.isDelivering = false;
+        worker.carryingWood = worker.carryingWood || 0;
+        worker.carryingStone = worker.carryingStone || 0;
+        worker.carryingMeat = worker.carryingMeat || 0;
+        
+        if(!deer.huntingWorkers.includes(worker.id)) {
+          deer.huntingWorkers.push(worker.id);
+        }
+      });
+    }
+
+    function sendWorkersToDeadDeer(deer, workers) {
+      workers.forEach(worker => { 
+        worker.tx = deer.x; 
+        worker.ty = deer.y;
+        worker.isCollectingMeat = deer;
+        worker.isChopping = null;
+        worker.isMining = null;
+        worker.isHunting = null;
+        worker.isDelivering = false;
+        worker.carryingWood = worker.carryingWood || 0;
+        worker.carryingStone = worker.carryingStone || 0;
+        worker.carryingMeat = worker.carryingMeat || 0;
+      });
+    }
+
+    function sendWorkersToConstruction(building, workers) {
+      workers.forEach(worker => { 
+        worker.tx = building.x; 
+        worker.ty = building.y;
+        worker.isConstructing = building.id;
+        worker.isChopping = null;
+        worker.isMining = null;
+        worker.isHunting = null;
+        worker.isCollectingMeat = null;
+        worker.isDelivering = false;
+        
+        if(!building.constructionWorkers.includes(worker.id)) {
+          building.constructionWorkers.push(worker.id);
+        }
+      });
+    }
+
+    function sendWorkersToBuilding(building, workers) {
+      workers.forEach(worker => { 
+        worker.tx = building.x; 
+        worker.ty = building.y;
+        worker.isDeliveringToBuilding = building.id;
+        worker.isChopping = null;
+        worker.isMining = null;
+        worker.isHunting = null;
+        worker.isCollectingMeat = null;
+        worker.isDelivering = false;
+      });
+    }
+    
+    function commitSelection(){
+      S.selection.clear();
+      let minx=Math.min(S.dragStart.x,S.mouse.x), miny=Math.min(S.dragStart.y,S.mouse.y);
+      let maxx=Math.max(S.dragStart.x,S.mouse.x), maxy=Math.max(S.dragStart.y,S.mouse.y);
+      const dragDist = Math.hypot(maxx-minx, maxy-miny);
+      const BOX_THRESHOLD = 8;
+
+      if(dragDist>BOX_THRESHOLD){
+        const rectLeft=0, rectTop=0, rectRight=canvas.width, rectBottom=canvas.height;
+        minx=Math.max(minx, rectLeft); maxx=Math.min(maxx, rectRight);
+        miny=Math.max(miny, rectTop); maxy=Math.min(maxy, rectBottom);
+
+        S.entities.forEach(e=>{
+          const s=isoToScreen(e.x,e.y);
+          if(s.x>=minx && s.x<=maxx && s.y>=miny && s.y<=maxy) S.selection.add(e.id);
+        });
+        
+        S.deer.forEach(deer=>{
+          const s=isoToScreen(deer.x,deer.y);
+          if(s.x>=minx && s.x<=maxx && s.y>=miny && s.y<=maxy) S.selection.add('deer_' + S.deer.indexOf(deer));
+        });
+      } else {
+        let hit=null, best=1e9;
+        
+        // GENİŞLETİLMİŞ SEÇİM ALANI - BİNALAR İÇİN GÖRSEL MERKEZİ
+        for(const entity of S.entities){
+          if(entity.kind === 'town' || entity.kind === 'house1' || entity.kind === 'house2' || 
+             entity.kind === 'lumberhouse' || entity.kind === 'hunterhouse' || entity.kind === 'stonehouse'){
+            const s=isoToScreen(entity.x,entity.y);
+            const d=Math.hypot(S.mouse.x-s.x,S.mouse.y-s.y);
+            if(d<30 && d<best){ best=d; hit=entity; }
+          }
+        }
+        
+        if(!hit){
+          for(const tree of S.trees){
+            const s=isoToScreen(tree.x,tree.y);
+            const d=Math.hypot(S.mouse.x-s.x,S.mouse.y-s.y);
+            if(d<40 && d<best){ best=d; hit=tree; }
+          }
+        }
+        
+        if(!hit){
+          for(const stone of S.stones){
+            const s=isoToScreen(stone.x,stone.y);
+            const d=Math.hypot(S.mouse.x-s.x,S.mouse.y-s.y);
+            if(d<40 && d<best){ best=d; hit=stone; }
+          }
+        }
+        
+        if(!hit){
+          for(const deer of S.deer){
+            const s=isoToScreen(deer.x,deer.y);
+            const d=Math.hypot(S.mouse.x-s.x,S.mouse.y-s.y);
+            if(d<40 && d<best){ best=d; hit=deer; }
+          }
+        }
+        
+        if(!hit){
+          for(const e of S.entities){
+            if(e.kind!=='worker') continue;
+            const s=isoToScreen(e.x,e.y);
+            const d=Math.hypot(S.mouse.x-s.x,S.mouse.y-s.y);
+            if(d<18 && d<best){ best=d; hit=e; }
+          }
+        }
+        
+        if(hit) {
+          if(hit.kind) S.selection.add(hit.id);
+          else if(hit.wood !== undefined) S.selection.add('tree_' + S.trees.indexOf(hit));
+          else if(hit.stone !== undefined) S.selection.add('stone_' + S.stones.indexOf(hit));
+          else if(hit.herdCenterX !== undefined) S.selection.add('deer_' + S.deer.indexOf(hit));
+        }
+      }
+      updateSelectionCard();
+    }
+
+    function updateHealthDisplay(entity) {
+      const healthContainer = document.getElementById('healthContainer');
+      const healthPercent = document.getElementById('healthPercent');
+      const healthBar = document.getElementById('healthBar');
+      
+      if(entity && entity.health !== undefined) {
+        const percent = Math.round((entity.health / entity.maxHealth) * 100);
+        healthPercent.textContent = percent;
+        healthBar.style.width = percent + '%';
+        
+        if(percent > 70) {
+          healthBar.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+        } else if(percent > 30) {
+          healthBar.style.background = 'linear-gradient(90deg, #FF9800, #FFC107)';
+        } else {
+          healthBar.style.background = 'linear-gradient(90deg, #F44336, #FF5722)';
+        }
+        
+        healthContainer.style.display = 'block';
+      } else {
+        healthContainer.style.display = 'none';
+      }
+    }
+
+    function updateWoodDisplay(woodAmount) {
+      const woodContainer = document.getElementById('woodContainer');
+      const woodAmountSpan = document.getElementById('woodAmount');
+      const woodBar = document.getElementById('woodBar');
+      
+      const percent = Math.round((woodAmount / 200) * 100);
+      woodAmountSpan.textContent = woodAmount;
+      woodBar.style.width = percent + '%';
+      woodContainer.style.display = 'block';
+    }
+
+    function updateStoneDisplay(stoneAmount) {
+      const stoneContainer = document.getElementById('stoneContainer');
+      const stoneAmountSpan = document.getElementById('stoneAmount');
+      const stoneBar = document.getElementById('stoneBar');
+      
+      const percent = Math.round((stoneAmount / 200) * 100);
+      stoneAmountSpan.textContent = stoneAmount;
+      stoneBar.style.width = percent + '%';
+      stoneContainer.style.display = 'block';
+    }
+
+    function updateDeerHealthDisplay(deer) {
+      const deerHealthContainer = document.getElementById('deerHealthContainer');
+      const deerHealthAmount = document.getElementById('deerHealthAmount');
+      const deerHealthBar = document.getElementById('deerHealthBar');
+      
+      if(deer && deer.health !== undefined && !deer.isDead) {
+        const percent = Math.round((deer.health / deer.maxHealth) * 100);
+        deerHealthAmount.textContent = deer.health;
+        deerHealthBar.style.width = percent + '%';
+        
+        if(percent > 70) {
+          deerHealthBar.style.background = 'linear-gradient(90deg, #FF6B6B, #FF8E8E)';
+        } else if(percent > 30) {
+          deerHealthBar.style.background = 'linear-gradient(90deg, #FF5252, #FF7979)';
+        } else {
+          deerHealthBar.style.background = 'linear-gradient(90deg, #FF0000, #FF3333)';
+        }
+        
+        deerHealthContainer.style.display = 'block';
+      } else {
+        deerHealthContainer.style.display = 'none';
+      }
+    }
+
+    function updateDeerMeatDisplay(deer) {
+      const deerMeatContainer = document.getElementById('deerMeatContainer');
+      const deerMeatAmount = document.getElementById('deerMeatAmount');
+      const deerMeatBar = document.getElementById('deerMeatBar');
+      
+      if(deer && deer.meat !== undefined && deer.isDead) {
+        const percent = Math.round((deer.meat / deer.maxMeat) * 100);
+        deerMeatAmount.textContent = deer.meat;
+        deerMeatBar.style.width = percent + '%';
+        deerMeatContainer.style.display = 'block';
+      } else {
+        deerMeatContainer.style.display = 'none';
+      }
+    }
+
+    function updateConstructionDisplay(entity) {
+      const constructionContainer = document.getElementById('constructionContainer');
+      const constructionPercent = document.getElementById('constructionPercent');
+      const constructionBar = document.getElementById('constructionBar');
+      
+      if(entity && entity.isUnderConstruction) {
+        const percent = Math.round(entity.constructionProgress);
+        constructionPercent.textContent = percent;
+        constructionBar.style.width = percent + '%';
+        constructionContainer.style.display = 'block';
+        
+        S.lastSelectedBuilding = entity.id;
+      } else {
+        constructionContainer.style.display = 'none';
+        S.lastSelectedBuilding = null;
+      }
+    }
+
+    function updateWorkerResourceDisplay(worker) {
+      const workerResourceContainer = document.getElementById('workerResourceContainer');
+      const workerWoodSpan = document.getElementById('workerWood');
+      const workerStoneSpan = document.getElementById('workerStone');
+      const workerMeatSpan = document.getElementById('workerMeat');
+      
+      if(worker) {
+        workerWoodSpan.textContent = worker.carryingWood || 0;
+        workerStoneSpan.textContent = worker.carryingStone || 0;
+        workerMeatSpan.textContent = worker.carryingMeat || 0;
+        workerResourceContainer.style.display = 'block';
+      } else {
+        workerResourceContainer.style.display = 'none';
+      }
+    }
+
+    function updateSelectedBuildingDisplay() {
+      if (S.lastSelectedBuilding) {
+        const building = S.entities.find(e => e.id === S.lastSelectedBuilding);
+        if (building && building.isUnderConstruction) {
+          updateConstructionDisplay(building);
+        }
+      }
+    }
+
+    function updateSelectionCard(){
+      const selInfo=document.getElementById('selectionInfo');
+      const spawnContainer=document.getElementById('spawnBtnContainer');
+      const commandCard=document.getElementById('commandCard');
+      const healthContainer=document.getElementById('healthContainer');
+      const woodContainer=document.getElementById('woodContainer');
+      const stoneContainer=document.getElementById('stoneContainer');
+      const deerHealthContainer=document.getElementById('deerHealthContainer');
+      const deerMeatContainer=document.getElementById('deerMeatContainer');
+      const constructionContainer=document.getElementById('constructionContainer');
+      const workerResourceContainer=document.getElementById('workerResourceContainer');
+      
+      spawnContainer.innerHTML=''; 
+      commandCard.style.display='none';
+      healthContainer.style.display='none';
+      woodContainer.style.display='none';
+      stoneContainer.style.display='none';
+      deerHealthContainer.style.display='none';
+      deerMeatContainer.style.display='none';
+      constructionContainer.style.display='none';
+      workerResourceContainer.style.display='none';
+      S.lastSelectedBuilding = null;
+      
+      if(!S.selection.size){ 
+        selInfo.textContent='Hiçbir şey seçili değil.'; 
+        return; 
+      }
+
+      const selectedWorkers=[...S.selection].map(id=>S.entities.find(x=>x.id===id && x.kind==='worker')).filter(Boolean);
+      if(selectedWorkers.length) commandCard.style.display='block';
+
+      if(S.selection.size===1){
+        const id=[...S.selection][0];
+        
+        if(typeof id === 'string' && id.startsWith('tree_')) {
+          const treeIndex = parseInt(id.split('_')[1]);
+          const tree = S.trees[treeIndex];
+          if(tree) {
+            selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/agac_icon.png" class="selection-icon" alt="Ağaç"><b>Ağaç</b></div>';
+            updateWoodDisplay(tree.wood);
+          }
+          return;
+        }
+        
+        if(typeof id === 'string' && id.startsWith('stone_')) {
+          const stoneIndex = parseInt(id.split('_')[1]);
+          const stone = S.stones[stoneIndex];
+          if(stone) {
+            selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/tas_icon.png" class="selection-icon" alt="Taş"><b>Taş Kaynağı</b></div>';
+            updateStoneDisplay(stone.stone);
+          }
+          return;
+        }
+        
+        if(typeof id === 'string' && id.startsWith('deer_')) {
+          const deerIndex = parseInt(id.split('_')[1]);
+          const deer = S.deer[deerIndex];
+          if(deer) {
+            if(deer.isDead) {
+              selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/geyik_icon.png" class="selection-icon" alt="Ölü Geyik"><b>Ölü Geyik</b></div>';
+              updateDeerMeatDisplay(deer);
+            } else {
+              selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/geyik_icon.png" class="selection-icon" alt="Geyik"><b>Geyik</b></div>';
+              updateDeerHealthDisplay(deer);
+            }
+          }
+          return;
+        }
+        
+        const e=S.entities.find(x=>x.id===id);
+        if(!e){ selInfo.textContent='—'; return; }
+
+        if(e.kind==='worker'){
+          let status = 'Boşta';
+          if(e.isConstructing) status = 'İnşaatta çalışıyor';
+          else if(e.isChopping) status = 'Ağaç kesiyor';
+          else if(e.isMining) status = 'Taş çıkarıyor';
+          else if(e.isHunting) status = 'Geyik avlıyor';
+          else if(e.isCollectingMeat) status = 'Et topluyor';
+          else if(e.isDeliveringToBuilding) status = 'Binaya kaynak taşıyor';
+          else if(e.isDelivering) status = (e.carryingWood ? 'Odun taşıyor' : e.carryingStone ? 'Taş taşıyor' : 'Et taşıyor');
+          
+          selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/isci_icon.png" class="selection-icon" alt="İşçi"><b>İşçi</b></div>Durum: ' + status;
+          updateWorkerResourceDisplay(e);
+        }
+        else if(e.kind==='town'){
+          selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/ana_ev_icon.png" class="selection-icon" alt="Kasaba Merkezi"><b>Kasaba Merkezi</b></div>';
+          updateHealthDisplay(e);
+          const btn=document.createElement('div');
+          btn.className='btn';
+          btn.innerHTML='<img src="assets/icons/isci_icon.png" class="resource-icon" alt="İşçi"> İşçi Üret (50 <img src="assets/icons/et_icon.png" class="resource-icon" alt="Et">)';
+          btn.onclick=()=>{
+            const currentWorkers=S.entities.filter(x=>x.kind==='worker').length;
+            const houses=S.entities.filter(x=>(x.kind === 'house1' || x.kind === 'house2') && !x.isUnderConstruction).length;
+            const maxPop=2 + houses*2;
+            if(currentWorkers>=maxPop){
+              alert('Ev yapman lazım!');
+              return;
+            }
+            if(S.res.food<50){ alert('Yeterli yiyecek yok!'); return; }
+            S.res.food-=50;
+            const newId=nextId();
+            S.entities.push({
+              id:newId, 
+              kind:'worker', 
+              x:e.x+0.8, y:e.y, 
+              tx:e.x+0.8, ty:e.y,
+              carryingWood: 0,
+              carryingStone: 0,
+              carryingMeat: 0
+            });
+            updateTopBar(); updatePopulation();
+          };
+          spawnContainer.appendChild(btn);
+        }
+        else if(e.kind==='house1' || e.kind==='house2'){
+          selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/house_icon.png" class="selection-icon" alt="Ev"><b>Ev</b></div>';
+          updateHealthDisplay(e);
+          if(e.isUnderConstruction) {
+            updateConstructionDisplay(e);
+          }
+        }
+        else if(e.kind==='lumberhouse'){
+          selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/oduncu_icon.png" class="selection-icon" alt="Oduncu Evi"><b>Oduncu Evi</b></div>';
+          updateHealthDisplay(e);
+          if(e.isUnderConstruction) {
+            updateConstructionDisplay(e);
+          }
+        }
+        else if(e.kind==='hunterhouse'){
+          selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/avci_evi_icon.png" class="selection-icon" alt="Avcı Evi"><b>Avcı Evi</b></div>';
+          updateHealthDisplay(e);
+          if(e.isUnderConstruction) {
+            updateConstructionDisplay(e);
+          }
+        }
+        else if(e.kind==='stonehouse'){
+          selInfo.innerHTML='<div class="selection-header"><img src="assets/icons/tas_evi_icon.png" class="selection-icon" alt="Taş Ocağı"><b>Taş Ocağı</b></div>';
+          updateHealthDisplay(e);
+          if(e.isUnderConstruction) {
+            updateConstructionDisplay(e);
+          }
+        }
+      } else {
+        selInfo.innerHTML=`<div class="selection-header"><img src="assets/icons/isci_icon.png" class="selection-icon" alt="Seçim"><b>${S.selection.size} birim seçili</b></div>`;
+      }
+    }
+
+    function updateTopBar(){
+      document.getElementById('food').textContent=S.res.food;
+      document.getElementById('wood').textContent=S.res.wood;
+      document.getElementById('stone').textContent=S.res.stone;
+      document.getElementById('gold').textContent=S.res.gold;
+      updatePopulation();
+    }
+
+    function updatePopulation(){
+      const currentWorkers=S.entities.filter(x=>x.kind==='worker').length;
+      const houses=S.entities.filter(x=>(x.kind === 'house1' || x.kind === 'house2') && !x.isUnderConstruction).length;
+      const maxPop=2 + houses*2;
+      document.getElementById('popCur').textContent=currentWorkers;
+      document.getElementById('popMax').textContent=maxPop;
+    }
+
+    function rightClickMove(){
+      const {wx,wy}=S.mouse;
+      const selectedWorkers=[...S.selection].map(id=>S.entities.find(e=>e.id===id && e.kind==='worker')).filter(Boolean);
+      if(!selectedWorkers.length) return;
+
+      const spacing=0.8, positions=[];
+      const cols=Math.ceil(Math.sqrt(selectedWorkers.length));
+      const rows=Math.ceil(selectedWorkers.length/cols);
+      for(let i=0;i<selectedWorkers.length;i++){
+        const col=i%cols;
+        const row=Math.floor(i/cols);
+        let tx=Math.floor(wx+(col-(cols-1)/2)*spacing);
+        let ty=Math.floor(wy+(row-(rows-1)/2)*spacing);
+        tx = Math.max(0, Math.min(MAP_W-1, tx));
+        ty = Math.max(0, Math.min(MAP_H-1, ty));
+        positions.push({tx,ty});
+      }
+      selectedWorkers.forEach((w,i)=>{ 
+        w.tx=positions[i].tx; 
+        w.ty=positions[i].ty;
+        w.isConstructing = null;
+        w.isChopping = null;
+        w.isMining = null;
+        w.isHunting = null;
+        w.isCollectingMeat = null;
+        w.isDelivering = false;
+        w.isDeliveringToBuilding = null;
+      });
+    }
+
+    const MOVE_SPEED=4;
+
+    function updateConstruction(timestamp) {
+      S.entities.forEach(building => {
+        if(building.isUnderConstruction && building.constructionProgress < 100) {
+          const activeWorkers = building.constructionWorkers.filter(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            return worker && Math.hypot(worker.x - building.x, worker.y - building.y) < 0.5;
+          });
+          
+          if(activeWorkers.length > 0 && timestamp - building.lastProgressUpdate > 1000) {
+            building.constructionProgress += activeWorkers.length * 10;
+            building.constructionProgress = Math.min(building.constructionProgress, 100);
+            building.lastProgressUpdate = timestamp;
+            
+            if(building.constructionProgress >= 100) {
+              building.isUnderConstruction = false;
+              
+              activeWorkers.forEach(workerId => {
+                const worker = S.entities.find(w => w.id === workerId);
+                if(worker) worker.isConstructing = null;
+              });
+              building.constructionWorkers = [];
+              
+              updatePopulation();
+              
+              if (S.lastSelectedBuilding === building.id) {
+                updateSelectionCard();
+              }
+            }
+          }
+          
+          if(!building.lastProgressUpdate) {
+            building.lastProgressUpdate = timestamp;
+          }
+        }
+      });
+    }
+
+    function updateResourceCollection(timestamp) {
+      if(!S.lastResourceUpdate) S.lastResourceUpdate = timestamp;
+      if(timestamp - S.lastResourceUpdate < 1000) return;
+      
+      // Ağaçları güncelle
+      for (let i = S.trees.length - 1; i >= 0; i--) {
+        const tree = S.trees[i];
+        if (tree.wood <= 0) {
+          tree.choppingWorkers.forEach(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            if (worker) {
+              worker.isChopping = null;
+              worker.isDelivering = false;
+              // DEĞİŞTİRİLDİ: Ağaç bittiğinde işçi yeni ağaç bulsun
+              const newTree = findNearestTree(worker.x, worker.y);
+              if (newTree) {
+                sendWorkersToTree(newTree, [worker]);
+              } else {
+                // Yeni ağaç yoksa işçiyi boşta bırak
+                worker.tx = worker.x;
+                worker.ty = worker.y;
+              }
+            }
+          });
+          
+          S.trees.splice(i, 1);
+          continue;
+        }
+        
+        if(tree.wood > 0 && tree.choppingWorkers.length > 0) {
+          const activeWorkers = tree.choppingWorkers.filter(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            return worker && Math.hypot(worker.x - tree.x, worker.y - tree.y) < 1.5;
+          });
+          
+          if(activeWorkers.length > 0) {
+            tree.wood = Math.max(0, tree.wood - activeWorkers.length);
+            
+            activeWorkers.forEach(workerId => {
+              const worker = S.entities.find(w => w.id === workerId);
+              if(worker) {
+                worker.carryingWood = worker.carryingWood || 0;
+                worker.carryingWood += 1;
+                
+                if(worker.carryingWood >= 10) {
+                  const storage = findNearestStorage(worker.x, worker.y, 'wood');
+                  if(storage) {
+                    worker.isChopping = null;
+                    worker.isDelivering = true;
+                    worker.tx = storage.x;
+                    worker.ty = storage.y;
+                    tree.choppingWorkers = tree.choppingWorkers.filter(id => id !== workerId);
+                  }
+                }
+                
+                if(tree.wood === 0 && worker.carryingWood > 0) {
+                  const storage = findNearestStorage(worker.x, worker.y, 'wood');
+                  if(storage) {
+                    worker.isChopping = null;
+                    worker.isDelivering = true;
+                    worker.tx = storage.x;
+                    worker.ty = storage.y;
+                    tree.choppingWorkers = tree.choppingWorkers.filter(id => id !== workerId);
+                  }
+                }
+              }
+            });
+            
+            if(S.selection.has('tree_' + i)) {
+              updateSelectionCard();
+            }
+          }
+        }
+      }
+      
+      // Taşları güncelle
+      for (let i = S.stones.length - 1; i >= 0; i--) {
+        const stone = S.stones[i];
+        if (stone.stone <= 0) {
+          stone.miningWorkers.forEach(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            if (worker) {
+              worker.isMining = null;
+              worker.isDelivering = false;
+              // DEĞİŞTİRİLDİ: Taş bittiğinde işçi yeni taş bulsun
+              const newStone = findNearestStone(worker.x, worker.y);
+              if (newStone) {
+                sendWorkersToStone(newStone, [worker]);
+              } else {
+                // Yeni taş yoksa işçiyi boşta bırak
+                worker.tx = worker.x;
+                worker.ty = worker.y;
+              }
+            }
+          });
+          
+          S.stones.splice(i, 1);
+          continue;
+        }
+        
+        if(stone.stone > 0 && stone.miningWorkers.length > 0) {
+          const activeWorkers = stone.miningWorkers.filter(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            return worker && Math.hypot(worker.x - stone.x, worker.y - stone.y) < 1.5;
+          });
+          
+          if(activeWorkers.length > 0) {
+            stone.stone = Math.max(0, stone.stone - activeWorkers.length);
+            
+            activeWorkers.forEach(workerId => {
+              const worker = S.entities.find(w => w.id === workerId);
+              if(worker) {
+                worker.carryingStone = worker.carryingStone || 0;
+                worker.carryingStone += 1;
+                
+                if(worker.carryingStone >= 10) {
+                  const storage = findNearestStorage(worker.x, worker.y, 'stone');
+                  if(storage) {
+                    worker.isMining = null;
+                    worker.isDelivering = true;
+                    worker.tx = storage.x;
+                    worker.ty = storage.y;
+                    stone.miningWorkers = stone.miningWorkers.filter(id => id !== workerId);
+                  }
+                }
+                
+                if(stone.stone === 0 && worker.carryingStone > 0) {
+                  const storage = findNearestStorage(worker.x, worker.y, 'stone');
+                  if(storage) {
+                    worker.isMining = null;
+                    worker.isDelivering = true;
+                    worker.tx = storage.x;
+                    worker.ty = storage.y;
+                    stone.miningWorkers = stone.miningWorkers.filter(id => id !== workerId);
+                  }
+                }
+              }
+            });
+            
+            if(S.selection.has('stone_' + i)) {
+              updateSelectionCard();
+            }
+          }
+        }
+      }
+      
+      // Geyik avlama sistemi - İŞÇİ GEYİĞİ TAKİP ETSİN
+      S.deer.forEach(deer => {
+        if (deer.health <= 0 && !deer.isDead) {
+          // Geyik öldü
+          deer.isDead = true;
+          deer.state = 'dead';
+          deer.isFleeing = false;
+          
+          deer.huntingWorkers.forEach(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            if (worker) {
+              worker.isHunting = null;
+              // İşçi artık et toplamaya hazır
+              worker.isCollectingMeat = deer;
+              worker.tx = deer.x;
+              worker.ty = deer.y;
+            }
+          });
+          
+          if(S.selection.has('deer_' + S.deer.indexOf(deer))) {
+            updateSelectionCard();
+          }
+        }
+        
+        // Canlı geyiklere saldırı - İŞÇİ GEYİĞİ TAKİP ETSİN
+        if(deer.health > 0 && deer.huntingWorkers.length > 0) {
+          deer.huntingWorkers.forEach(workerId => {
+            const worker = S.entities.find(w => w.id === workerId && w.kind === 'worker');
+            if (worker) {
+              // İşçi geyiği sürekli takip etsin
+              worker.tx = deer.x;
+              worker.ty = deer.y;
+              
+              // Yakınsa saldır - 20 HASAR
+              if(Math.hypot(worker.x - deer.x, worker.y - deer.y) < 1.5) {
+                deer.health = Math.max(0, deer.health - 20);
+              }
+            }
+          });
+          
+          if(S.selection.has('deer_' + S.deer.indexOf(deer))) {
+            updateSelectionCard();
+          }
+        }
+        
+        // Ölü geyiklerden et toplama - 10'AR 10'AR TOPLASIN AMA BAŞINDA DURSUN
+        if(deer.isDead && deer.meat > 0) {
+          S.entities.forEach(worker => {
+            if(worker.kind === 'worker' && worker.isCollectingMeat === deer) {
+              // İşçi geyiğe doğru hareket etsin
+              worker.tx = deer.x;
+              worker.ty = deer.y;
+              
+              if(Math.hypot(worker.x - deer.x, worker.y - deer.y) < 1.5) {
+                // 10'AR 10'AR ET TOPLASIN
+                const meatToCollect = Math.min(10, deer.meat);
+                deer.meat -= meatToCollect;
+                worker.carryingMeat = (worker.carryingMeat || 0) + meatToCollect;
+                
+                if(deer.meat === 0) {
+                  // Depoya git
+                  const storage = findNearestStorage(worker.x, worker.y, 'meat');
+                  if(storage) {
+                    worker.isCollectingMeat = null;
+                    worker.isDelivering = true;
+                    worker.tx = storage.x;
+                    worker.ty = storage.y;
+                  }
+                }
+                
+                if(deer.meat === 0) {
+                  worker.isCollectingMeat = null;
+                  // Ölü geyiği kaldır
+                  setTimeout(() => {
+                    const index = S.deer.indexOf(deer);
+                    if (index > -1) {
+                      S.deer.splice(index, 1);
+                    }
+                  }, 1000);
+                }
+                
+                if(S.selection.has('deer_' + S.deer.indexOf(deer))) {
+                  updateSelectionCard();
+                }
+              }
+            }
+          });
+        }
+      });
+      
+      // YENİ: BİNAYA TESLİMAT SİSTEMİ
+      S.entities.forEach(worker => {
+        if(worker.kind === 'worker' && worker.isDeliveringToBuilding) {
+          const building = S.entities.find(b => b.id === worker.isDeliveringToBuilding);
+          
+          if(building && Math.hypot(worker.x - building.x, worker.y - building.y) < 0.5) {
+            // İşçi binaya ulaştı, kaynakları bırak
+            let deliveredAnything = false;
+            
+            if(worker.carryingWood > 0) {
+              // Odun bırakma kontrolü
+              if(building.kind === 'lumberhouse' || building.kind === 'town') {
+                S.res.wood += worker.carryingWood;
+                worker.carryingWood = 0;
+                deliveredAnything = true;
+              }
+            }
+            
+            if(worker.carryingStone > 0) {
+              // Taş bırakma kontrolü
+              if(building.kind === 'stonehouse' || building.kind === 'town') {
+                S.res.stone += worker.carryingStone;
+                worker.carryingStone = 0;
+                deliveredAnything = true;
+              }
+            }
+            
+            if(worker.carryingMeat > 0) {
+              // Et bırakma kontrolü
+              if(building.kind === 'hunterhouse' || building.kind === 'town') {
+                S.res.food += worker.carryingMeat;
+                worker.carryingMeat = 0;
+                deliveredAnything = true;
+              }
+            }
+            
+            if(deliveredAnything) {
+              worker.isDeliveringToBuilding = null;
+              updateTopBar();
+              
+              if(S.selection.has(worker.id)) {
+                updateSelectionCard();
+              }
+            } else {
+              // Bu binaya uygun kaynak yok, işçiyi serbest bırak
+              worker.isDeliveringToBuilding = null;
+            }
+          }
+        }
+      });
+      
+      // Kaynak teslimatını işle - TESLİMAT SONRASI OTOMATİK İŞ BULSUN
+      S.entities.forEach(worker => {
+        if(worker.kind === 'worker' && worker.isDelivering) {
+          let storage = null;
+          let resourceType = '';
+          
+          if(worker.carryingWood > 0) {
+            storage = findNearestStorage(worker.x, worker.y, 'wood');
+            resourceType = 'wood';
+          } else if(worker.carryingStone > 0) {
+            storage = findNearestStorage(worker.x, worker.y, 'stone');
+            resourceType = 'stone';
+          } else if(worker.carryingMeat > 0) {
+            storage = findNearestStorage(worker.x, worker.y, 'meat');
+            resourceType = 'meat';
+          }
+          
+          if(storage && Math.hypot(worker.x - storage.x, worker.y - storage.y) < 0.5) {
+            // Kaynakları teslim et
+            if(worker.carryingWood > 0) {
+              S.res.wood += worker.carryingWood;
+              worker.carryingWood = 0;
+            }
+            if(worker.carryingStone > 0) {
+              S.res.stone += worker.carryingStone;
+              worker.carryingStone = 0;
+            }
+            if(worker.carryingMeat > 0) {
+              S.res.food += worker.carryingMeat;
+              worker.carryingMeat = 0;
+            }
+            
+            worker.isDelivering = false;
+            updateTopBar();
+            
+            if(S.selection.has(worker.id)) {
+              updateSelectionCard();
+            }
+            
+            // DEĞİŞTİRİLDİ: İşçi teslimattan sonra otomatik olarak yeni kaynak arasın
+            let newResource = null;
+            if(resourceType === 'wood') {
+              newResource = findNearestTree(worker.x, worker.y);
+              if(newResource) {
+                sendWorkersToTree(newResource, [worker]);
+              }
+            } else if(resourceType === 'stone') {
+              newResource = findNearestStone(worker.x, worker.y);
+              if(newResource) {
+                sendWorkersToStone(newResource, [worker]);
+              }
+            }
+            // Geyik için otomatik devam etme - sadece ağaç ve taş için
+            
+            if(!newResource) {
+              // Yeni kaynak yoksa işçiyi boşta bırak
+              worker.tx = worker.x;
+              worker.ty = worker.y;
+            }
+          }
+        }
+      });
+      
+      S.lastResourceUpdate = timestamp;
+    }
+
+    function draw(timestamp){
+      if(timestamp===undefined) timestamp=performance.now();
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      if(!S.lastConstructionUpdate) S.lastConstructionUpdate = timestamp;
+      if(timestamp - S.lastConstructionUpdate > 1000) {
+        updateConstruction(timestamp);
+        S.lastConstructionUpdate = timestamp;
+      }
+      
+      updateResourceCollection(timestamp);
+      updateDeerBehavior(timestamp);
+      updateFogOfWar();
+      updateSelectedBuildingDisplay();
+	
+      if (S.selection.size === 1) {
+        const selectedId = [...S.selection][0];
+        const selectedEntity = S.entities.find(e => e.id === selectedId);
+        if (selectedEntity && selectedEntity.kind === 'worker') {
+          updateWorkerResourceDisplay(selectedEntity);
+        }
+      }
+
+      const camSpeed=10;
+      // DEĞİŞTİRİLDİ: Capslock'tan etkilenmeyen tuş kontrolleri
+      if(S.keys['w']||S.keys['arrowup']) S.cam.y-=camSpeed;
+      if(S.keys['s']||S.keys['arrowdown']) S.cam.y+=camSpeed;
+      if(S.keys['a']||S.keys['arrowleft']) S.cam.x-=camSpeed;
+      if(S.keys['d']||S.keys['arrowright']) S.cam.x+=camSpeed;
+
+      // Kamerayı harita sınırları içinde tut - KÖŞE NOKTALARI YÖNTEMİ
+      const mapWidth = (MAP_W + MAP_H) * (TW/2) * S.cam.z;
+      const mapHeight = (MAP_W + MAP_H) * (TH/2) * S.cam.z;
+
+      const minCamX = canvas.width/2 - mapWidth/2 + 100;
+      const maxCamX = canvas.width/2 + mapWidth/2 - 600;
+      const minCamY = canvas.height/2 - mapHeight/2 + 300;
+      const maxCamY = canvas.height/2 + mapHeight/2 - 50;
+
+      // Yumuşak sınır kontrolü
+      S.cam.x = Math.max(minCamX, Math.min(S.cam.x, maxCamX));
+      S.cam.y = Math.max(minCamY, Math.min(S.cam.y, maxCamY));
+
+      // ZEMİN ÇİZİMİ
+      for(let y=0;y<MAP_H;y++) for(let x=0;x<MAP_W;x++){
+        const {x:sx,y:sy}=isoToScreen(x+0.5,y+0.5);
+        ctx.beginPath();
+        ctx.moveTo(sx,sy);
+        ctx.lineTo(sx+TW/2*S.cam.z,sy+TH/2*S.cam.z);
+        ctx.lineTo(sx,sy+TH*S.cam.z);
+        ctx.lineTo(sx-TW/2*S.cam.z,sy+TH/2*S.cam.z);
+        ctx.closePath();
+        ctx.fillStyle='#2d7a32'; 
+        ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.06)'; 
+        ctx.stroke();
+      }
+
+      // İŞÇİ HAREKET GÜNCELLEMESİ - ESKİ SİSTEME GERİ EKLENDİ
+      S.entities.forEach(e=>{
+        if(e.kind === 'worker') {
+          if(!e.lastTime) e.lastTime=timestamp;
+          const dx=e.tx-e.x, dy=e.ty-e.y;
+          const dist=Math.hypot(dx,dy);
+          if(dist>0.01){
+            const deltaTime=(timestamp-e.lastTime)/1000;
+            const moveAmount=MOVE_SPEED*deltaTime;
+            const moveX=(dx/dist)*moveAmount;
+            const moveY=(dy/dist)*moveAmount;
+            let finalX = e.x + moveX;
+            let finalY = e.y + moveY;
+
+            const radius = 0.3;
+            finalX = Math.max(radius, Math.min(MAP_W-1-radius, finalX));
+            finalY = Math.max(radius, Math.min(MAP_H-1-radius, finalY));
+
+            e.x=finalX; e.y=finalY;
+            if(Math.hypot(e.x-e.tx,e.y-e.ty)<0.05){ e.x=e.tx; e.y=e.ty; }
+          } else { e.x=e.tx; e.y=e.ty; }
+          e.lastTime=timestamp;
+        }
+      });
+
+      // TÜM NESNELERİ TOPLA VE Y KOORDİNATINA GÖRE SIRALA
+      const allObjects = [];
+      
+      // Ağaçları ekle
+      S.trees.forEach(tree => {
+        allObjects.push({
+          type: 'tree',
+          data: tree,
+          y: tree.y // Sıralama için y koordinatı
+        });
+      });
+      
+      // Taşları ekle
+      S.stones.forEach(stone => {
+        allObjects.push({
+          type: 'stone', 
+          data: stone,
+          y: stone.y
+        });
+      });
+      
+      // Geyikleri ekle
+      S.deer.forEach(deer => {
+        allObjects.push({
+          type: 'deer',
+          data: deer, 
+          y: deer.y
+        });
+      });
+      
+      // Binaları ekle (worker olmayan)
+      S.entities.forEach(entity => {
+        if(entity.kind !== 'worker') {
+          allObjects.push({
+            type: 'building',
+            data: entity,
+            y: entity.y
+          });
+        }
+      });
+      
+      // İşçileri ekle
+      S.entities.forEach(entity => {
+        if(entity.kind === 'worker') {
+          allObjects.push({
+            type: 'worker',
+            data: entity,
+            y: entity.y
+          });
+        }
+      });
+      
+      // Y koordinatına göre sırala (küçük y -> büyük y)
+      allObjects.sort((a, b) => a.y - b.y);
+      
+      // SIRALANMIŞ NESNELERİ ÇİZ
+      allObjects.forEach(obj => {
+        const {x:sx,y:sy}=isoToScreen(obj.data.x, obj.data.y);
+        
+        switch(obj.type) {
+          case 'tree':
+            const tree = obj.data;
+            let treeImage;
+            if(tree.type === 1) treeImage = treeImages.type1;
+            else if(tree.type === 2) treeImage = treeImages.type2;
+            else treeImage = treeImages.type3;
+            
+            if(treeImage && treeImage.complete) {
+              ctx.drawImage(
+                treeImage, 
+                sx - 24*S.cam.z,
+                sy - 48*S.cam.z,
+                48*S.cam.z,
+                48*S.cam.z
+              );
+            } else {
+              ctx.font=`${24*S.cam.z}px serif`;
+              ctx.textAlign='center'; 
+              ctx.textBaseline='middle';
+              ctx.fillStyle = '#4CAF50';
+              ctx.fillText('🌲', sx, sy-4);
+            }
+
+            if(S.selection.has('tree_' + S.trees.indexOf(tree))) {
+              ctx.strokeStyle = 'cyan';
+              ctx.beginPath();
+              ctx.arc(sx, sy - 24*S.cam.z, 12*S.cam.z, 0, Math.PI*2);
+              ctx.stroke();
+            }
+            break;
+            
+          case 'stone':
+            const stone = obj.data;
+            let stoneImage;
+            if(stone.type === 1) stoneImage = stoneImages.type1;
+            else if(stone.type === 2) stoneImage = stoneImages.type2;
+            else stoneImage = stoneImages.type3;
+            
+            if(stoneImage && stoneImage.complete) {
+              ctx.drawImage(
+                stoneImage, 
+                sx - 24*S.cam.z,
+                sy - 48*S.cam.z,
+                48*S.cam.z,
+                48*S.cam.z
+              );
+            } else {
+              ctx.font=`${48*S.cam.z}px serif`;
+              ctx.textAlign='center'; 
+              ctx.textBaseline='middle';
+              ctx.fillStyle = '#888888';
+              ctx.fillText('🪨', sx, sy-4);
+            }
+
+            if(S.selection.has('stone_' + S.stones.indexOf(stone))) {
+              ctx.strokeStyle = 'cyan';
+              ctx.beginPath();
+              ctx.arc(sx, sy - 24*S.cam.z, 12*S.cam.z, 0, Math.PI*2);
+              ctx.stroke();
+            }
+            break;
+            
+          case 'deer':
+            const deer = obj.data;
+            
+            if(deer.isDead) {
+              // Ölü geyik - görsel veya emoji
+              if(deerImages.dead && deerImages.dead.complete) {
+                ctx.save();
+                // Ölü geyik için yön değiştirme gerekmez
+                ctx.drawImage(
+                  deerImages.dead, 
+                  sx - 24*S.cam.z,
+                  sy - 48*S.cam.z,
+                  48*S.cam.z,
+                  48*S.cam.z
+                );
+                ctx.restore();
+              } else {
+                ctx.font=`${24*S.cam.z}px serif`;
+                ctx.textAlign='center'; 
+                ctx.textBaseline='middle';
+                ctx.fillStyle = '#666666';
+                ctx.fillText('💀', sx, sy-4);
+              }
+
+              // Et çubuğu - YUKARI KALDIRILDI
+              const meatPercent = (deer.meat / deer.maxMeat) * 100;
+              const barWidth = 40 * S.cam.z;
+              const barHeight = 4 * S.cam.z;
+              ctx.fillStyle = 'rgba(0,0,0,0.5)';
+              ctx.fillRect(sx - barWidth/2, sy - 50*S.cam.z, barWidth, barHeight);
+              ctx.fillStyle = '#FF9800';
+              ctx.fillRect(sx - barWidth/2, sy - 50*S.cam.z, barWidth * (meatPercent/100), barHeight);
+            } else {
+              // Canlı geyik - görsel veya emoji
+              if(deerImages.alive && deerImages.alive.complete) {
+                ctx.save();
+                // Geyiğin yönüne göre görseli yansıt
+                if (deer.direction === -1) {
+                  // Sola bakıyorsa görseli yatay olarak çevir
+                  ctx.translate(sx, sy);
+                  ctx.scale(-1, 1);
+                  ctx.translate(-sx, -sy);
+                }
+                ctx.drawImage(
+                  deerImages.alive, 
+                  sx - 24*S.cam.z,
+                  sy - 48*S.cam.z,
+                  48*S.cam.z,
+                  48*S.cam.z
+                );
+                ctx.restore();
+              } else {
+                ctx.font=`${48*S.cam.z}px serif`;
+                ctx.textAlign='center'; 
+                ctx.textBaseline='middle';
+                ctx.fillStyle = deer.state === 'idle' ? '#D2691E' : '#8B4513';
+                ctx.fillText('🦌', sx, sy-4);
+              }
+
+              // Can çubuğu - YUKARI KALDIRILDI
+              const healthPercent = (deer.health / deer.maxHealth) * 100;
+              const barWidth = 40 * S.cam.z;
+              const barHeight = 4 * S.cam.z;
+              ctx.fillStyle = 'rgba(0,0,0,0.5)';
+              ctx.fillRect(sx - barWidth/2, sy - 50*S.cam.z, barWidth, barHeight);
+              ctx.fillStyle = healthPercent > 70 ? '#FF6B6B' : healthPercent > 30 ? '#FF5252' : '#FF0000';
+              ctx.fillRect(sx - barWidth/2, sy - 50*S.cam.z, barWidth * (healthPercent/100), barHeight);
+            }
+
+            if(S.selection.has('deer_' + S.deer.indexOf(deer))) {
+              ctx.strokeStyle = 'cyan';
+              ctx.beginPath();
+              // Geyik seçim halkasını görselin ortasına getir
+              ctx.arc(sx, sy - 24*S.cam.z, 12*S.cam.z, 0, Math.PI*2);
+              ctx.stroke();
+            }
+            break;
+            
+          case 'building':
+            const building = obj.data;
+            
+            // DEĞİŞTİRİLDİ: Tamamlanmış binalarda inşaat efekti kaldırıldı
+            if(building.isUnderConstruction) {
+              ctx.globalAlpha = 0.5;
+            } else {
+              ctx.globalAlpha = 1.0;
+            }
+
+            // TÜM BİNALAR İÇİN GÖRSEL KULLANIMI
+            let buildingImage = null;
+            let buildingWidth = 72;
+            let buildingHeight = 72;
+            let offsetX = 36;
+            let offsetY = 72;
+
+            if(building.kind==='town'){ 
+              buildingImage = buildingImages.town;
+            }
+            else if(building.kind==='house1'){ 
+              buildingImage = buildingImages.house1;
+            }
+            else if(building.kind==='house2'){ 
+              buildingImage = buildingImages.house2;
+            }
+            else if(building.kind==='lumberhouse'){ 
+              buildingImage = buildingImages.lumberhouse;
+            }
+            else if(building.kind==='hunterhouse'){ 
+              buildingImage = buildingImages.hunterhouse;
+            }
+            else if(building.kind==='stonehouse'){ 
+              buildingImage = buildingImages.stonehouse;
+            }
+
+            // SADECE GÖRSEL VARSA VE YÜKLENDİYSE ÇİZ
+            if(buildingImage && buildingImage.complete) {
+              ctx.drawImage(
+                buildingImage, 
+                sx - offsetX*S.cam.z,
+                sy - offsetY*S.cam.z,
+                buildingWidth*S.cam.z,
+                buildingHeight*S.cam.z
+              );
+            } else {
+              // Görsel yüklenmemişse emoji kullan
+              ctx.font=`${48*S.cam.z}px serif`;
+              ctx.textAlign='center'; 
+              ctx.textBaseline='middle';
+              if(building.kind==='town') ctx.fillText('🏛️', sx, sy-4);
+              else if(building.kind==='house1' || building.kind==='house2') ctx.fillText('🏠', sx, sy-4);
+              else if(building.kind==='lumberhouse') ctx.fillText('⛺', sx, sy-4);
+              else if(building.kind==='hunterhouse') ctx.fillText('🛖', sx, sy-4);
+              else if(building.kind==='stonehouse') ctx.fillText('🏭', sx, sy-4);
+            }
+
+            // DEĞİŞTİRİLDİ: Sadece inşaat halindeki binalarda inşaat barı göster
+            if(building.isUnderConstruction) {
+              const barWidth = 40 * S.cam.z;
+              const barHeight = 4 * S.cam.z;
+              // İnşaat barını görselin üstüne yerleştir
+              ctx.fillStyle = 'rgba(0,0,0,0.5)';
+              ctx.fillRect(sx - barWidth/2, sy - 80*S.cam.z, barWidth, barHeight);
+              ctx.fillStyle = '#FF9800';
+              ctx.fillRect(sx - barWidth/2, sy - 80*S.cam.z, barWidth * (building.constructionProgress/100), barHeight);
+            }
+
+            // Seçim halkası - GÖRSELİN ORTASINDA
+            if(S.selection.has(building.id)){ 
+              ctx.strokeStyle='cyan'; 
+              ctx.beginPath(); 
+              // Görselin ortası: sy - 36*S.cam.z (72 yüksekliğin yarısı)
+              ctx.arc(sx, sy - 36*S.cam.z, 15*S.cam.z, 0, Math.PI*2);
+              ctx.stroke(); 
+            }
+            
+            ctx.globalAlpha = 1.0;
+            break;
+            
+          case 'worker':
+            const worker = obj.data;
+            
+            ctx.beginPath(); 
+            ctx.arc(sx,sy-4,6*S.cam.z,0,Math.PI*2); 
+            ctx.fillStyle=worker.isConstructing ? 'orange' : 
+                         worker.isChopping ? 'brown' : 
+                         worker.isMining ? 'gray' :
+                         worker.isHunting ? 'darkred' :
+                         worker.isCollectingMeat ? 'darkorange' :
+                         worker.isDeliveringToBuilding ? 'purple' :
+                         worker.isDelivering ? 'darkgreen' : 'yellow'; 
+            ctx.fill(); 
+
+            if(S.selection.has(worker.id)){ 
+              ctx.strokeStyle='cyan'; 
+              ctx.beginPath(); 
+              // İşçi seçim halkasını görselin ortasına getir
+              ctx.arc(sx, sy + 2*S.cam.z, 10*S.cam.z, 0, Math.PI*2);
+              ctx.stroke(); 
+            }
+            break;
+        }
+      });
+
+      if(S.dragging){
+        const minX=Math.min(S.dragStart.x,S.mouse.x);
+        const minY=Math.min(S.dragStart.y,S.mouse.y);
+        const width=Math.abs(S.dragStart.x-S.mouse.x);
+        const height=Math.abs(S.dragStart.y-S.mouse.y);
+        ctx.strokeStyle='lime';
+        ctx.setLineDash([6,4]);
+        ctx.strokeRect(minX,minY,width,height);
+        ctx.setLineDash([]);
+      }
+
+      if(S.buildMode){
+        const gx=Math.floor(S.mouse.wx);
+        const gy=Math.floor(S.mouse.wy);
+        const {x:sx,y:sy}=isoToScreen(gx,gy);
+        
+        let canBuild = true;
+        
+        // Bina kontrolü
+        for(const entity of S.entities){
+          if(entity.kind === 'town' || entity.kind === 'house1' || entity.kind === 'house2' || 
+             entity.kind === 'lumberhouse' || entity.kind === 'hunterhouse' ||
+             entity.kind === 'stonehouse'){
+            if(Math.floor(entity.x) === gx && Math.floor(entity.y) === gy){
+              canBuild = false;
+              break;
+            }
+          }
+        }
+        
+        // Ağaç kontrolü
+        if(canBuild){
+          for(const tree of S.trees){
+            if(Math.floor(tree.x) === gx && Math.floor(tree.y) === gy){
+              canBuild = false;
+              break;
+            }
+          }
+        }
+        
+        // Taş kontrolü
+        if(canBuild){
+          for(const stone of S.stones){
+            if(Math.floor(stone.x) === gx && Math.floor(stone.y) === gy){
+              canBuild = false;
+              break;
+            }
+          }
+        }
+        
+        // Geyik kontrolü EKLENDİ
+        if(canBuild){
+          for(const deer of S.deer){
+            if(Math.floor(deer.x) === gx && Math.floor(deer.y) === gy){
+              canBuild = false;
+              break;
+            }
+          }
+        }
+        
+        ctx.globalAlpha = 0.5;
+        
+        // İnşa modundaki görselleri kendi görsellerimizle değiştir
+        let buildImage = null;
+        let buildWidth = 72;
+        let buildHeight = 72;
+        let offsetX = 36;
+        let offsetY = 72;
+
+        // Tüm bina tipleri için ayrı ayrı kontrol
+        if(S.buildMode==='house1'){ 
+          buildImage = buildingImages.house1;
+        }
+        else if(S.buildMode==='house2'){ 
+          buildImage = buildingImages.house2;
+        }
+        else if(S.buildMode==='lumberhouse'){ 
+          buildImage = buildingImages.lumberhouse;
+        }
+        else if(S.buildMode==='hunterhouse'){ 
+          buildImage = buildingImages.hunterhouse;
+        }
+        else if(S.buildMode==='stonehouse'){ 
+          buildImage = buildingImages.stonehouse;
+        }
+
+        if(buildImage && buildImage.complete) {
+          // DEĞİŞTİRİLDİ: İnşa edilemezse kırmızı filtre uygula
+          if(!canBuild) {
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.fillRect(sx - offsetX*S.cam.z, sy - offsetY*S.cam.z, buildWidth*S.cam.z, buildHeight*S.cam.z);
+            ctx.globalAlpha = 0.5;
+          }
+          
+          ctx.drawImage(
+            buildImage, 
+            sx - offsetX*S.cam.z,
+            sy - offsetY*S.cam.z,
+            buildWidth*S.cam.z,
+            buildHeight*S.cam.z
+          );
+        } else {
+          // Görsel yüklenmemişse emoji kullan
+          ctx.font=`${48*S.cam.z}px serif`;
+          ctx.textAlign='center'; 
+          ctx.textBaseline='middle';
+          // DEĞİŞTİRİLDİ: İnşa edilemezse kırmızı renk
+          ctx.fillStyle=canBuild ? 'rgba(100,255,100,0.5)' : 'rgba(255,100,100,0.7)';
+          if(S.buildMode==='house1' || S.buildMode==='house2') ctx.fillText('🏠',sx,sy-4);
+          if(S.buildMode==='lumberhouse') ctx.fillText('⛺',sx,sy-4);
+          if(S.buildMode==='hunterhouse') ctx.fillText('🛖',sx,sy-4);
+          if(S.buildMode==='stonehouse') ctx.fillText('🏭',sx,sy-4);
+        }
+        
+        ctx.globalAlpha = 1.0;
+      }
+
+       drawFogOfWar();
+
+      requestAnimationFrame(draw);
+    }
+
+    function drawFogOfWar() {
+      for(let y = 0; y < MAP_H; y++) {
+        for(let x = 0; x < MAP_W; x++) {
+          if(S.fogOfWar[y][x]) {
+            const {x: sx, y: sy} = isoToScreen(x + 0.5, y + 0.5);
+            
+            // Karanlık alan
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + TW/2 * S.cam.z, sy + TH/2 * S.cam.z);
+            ctx.lineTo(sx, sy + TH * S.cam.z);
+            ctx.lineTo(sx - TW/2 * S.cam.z, sy + TH/2 * S.cam.z);
+            ctx.closePath();
+            
+            if(S.explored[y][x]) {
+              // Keşfedilmiş ama görünmeyen alan (koyu gri)
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            } else {
+              // Hiç keşfedilmemiş alan (siyah)
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            }
+            ctx.fill();
+          }
+        }
+      }
+    }
+
+    requestAnimationFrame(draw);
+
+    document.getElementById('buildBtn').onclick = () => {
+      const buildMenu=document.getElementById('buildMenu');
+      buildMenu.style.display = buildMenu.style.display==='none' ? 'block' : 'none';
+    };
+    
+    // DEĞİŞTİRİLDİ: Ev inşa tuşuna basıldığında rastgele ev tipi seç
+    document.getElementById('buildHouseBtn').onclick = ()=>{ 
+      // İnşa moduna girerken rastgele ev tipini belirle
+      const houseType = randomInt(1, 2) === 1 ? 'house1' : 'house2';
+      S.buildMode = houseType; // Direkt house1 veya house2 moduna geç
+    };
+    
+    document.getElementById('buildLumberhouseBtn').onclick = ()=>{ S.buildMode='lumberhouse'; };
+    document.getElementById('buildHunterhouseBtn').onclick = ()=>{ S.buildMode='hunterhouse'; };
+    document.getElementById('buildStonehouseBtn').onclick = ()=>{ S.buildMode='stonehouse'; };
+
+    updateTopBar();
+
+    // YENİ: Kaydet/Yükle sistemi
+  function saveGame() {
+      const gameData = {
+          resources: S.res,
+          entities: S.entities.map(entity => ({
+              ...entity,
+              // Fonksiyonları kaydetme
+              lastTime: undefined,
+              lastProgressUpdate: undefined
+          })),
+          trees: S.trees,
+          stones: S.stones,
+          deer: S.deer.map(deer => ({
+              ...deer,
+              // Fonksiyonları ve timer'ları kaydetme
+              lastMoveTime: undefined,
+              stateTimer: undefined,
+              normalStateTimer: undefined
+          })),
+          fogOfWar: S.fogOfWar,
+          explored: S.explored,
+          timestamp: Date.now()
+      };
+      
+      localStorage.setItem('villagerSave', JSON.stringify(gameData));
+      alert('Oyun kaydedildi!');
+  }
+
+  function loadGame() {
+      const saved = localStorage.getItem('villagerSave');
+      if (!saved) {
+          alert('Kayıtlı oyun bulunamadı!');
+          return;
+      }
+      
+      try {
+          const gameData = JSON.parse(saved);
+          
+          // Oyun state'ini geri yükle
+          S.res = gameData.resources;
+          S.entities = gameData.entities;
+          S.trees = gameData.trees;
+          S.stones = gameData.stones;
+          S.deer = gameData.deer;
+          S.fogOfWar = gameData.fogOfWar || [];
+          S.explored = gameData.explored || [];
+          
+          // UI'ı güncelle
+          updateTopBar();
+          updatePopulation();
+          
+          // Seçimi temizle
+          S.selection.clear();
+          updateSelectionCard();
+          
+          alert('Oyun yüklendi!');
+      } catch (error) {
+          alert('Oyun yüklenirken hata oluştu: ' + error.message);
+      }
+  }
+
+  // Kaydet/Yükle butonlarını oluştur
+  function createSaveLoadButtons() {
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.position = 'fixed';
+      buttonContainer.style.bottom = '10px';
+      buttonContainer.style.left = '50%';
+      buttonContainer.style.transform = 'translateX(-50%)';
+      buttonContainer.style.display = 'flex';
+      buttonContainer.style.gap = '10px';
+      buttonContainer.style.zIndex = '100';
+      
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = '💾 Oyunu Kaydet';
+      saveBtn.style.padding = '8px 16px';
+      saveBtn.style.background = 'linear-gradient(180deg, #4CAF50, #45a049)';
+      saveBtn.style.color = 'white';
+      saveBtn.style.border = 'none';
+      saveBtn.style.borderRadius = '5px';
+      saveBtn.style.cursor = 'pointer';
+      saveBtn.style.fontWeight = 'bold';
+      saveBtn.onclick = saveGame;
+      
+      const loadBtn = document.createElement('button');
+      loadBtn.textContent = '📂 Oyunu Yükle';
+      loadBtn.style.padding = '8px 16px';
+      loadBtn.style.background = 'linear-gradient(180deg, #2196F3, #0b7dda)';
+      loadBtn.style.color = 'white';
+      loadBtn.style.border = 'none';
+      loadBtn.style.borderRadius = '5px';
+      loadBtn.style.cursor = 'pointer';
+      loadBtn.style.fontWeight = 'bold';
+      loadBtn.onclick = loadGame;
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '🗑️ Kaydı Sil';
+      deleteBtn.style.padding = '8px 16px';
+      deleteBtn.style.background = 'linear-gradient(180deg, #f44336, #d32f2f)';
+      deleteBtn.style.color = 'white';
+      deleteBtn.style.border = 'none';
+      deleteBtn.style.borderRadius = '5px';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.style.fontWeight = 'bold';
+      deleteBtn.onclick = () => {
+          if (confirm('Kayıtlı oyunu silmek istediğinize emin misiniz?')) {
+              localStorage.removeItem('villagerSave');
+              alert('Kayıt silindi!');
+          }
+      };
+      
+      buttonContainer.appendChild(saveBtn);
+      buttonContainer.appendChild(loadBtn);
+      buttonContainer.appendChild(deleteBtn);
+      document.body.appendChild(buttonContainer);
+  }
+
+  // Sayfa yüklendiğinde butonları oluştur
+  window.addEventListener('load', () => {
+      setTimeout(createSaveLoadButtons, 1000); // Loading ekranından sonra
+  });
+
+  </script>
+</body>
+</html>
