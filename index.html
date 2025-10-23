@@ -270,17 +270,74 @@
     #muteBtn:hover {
       transform: scale(1.1);
     }
+
+    /* YENİ: Tooltip stilleri */
+    #tooltip {
+      position: fixed;
+      display: none;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      padding: 8px;
+      z-index: 1000;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    }
+
+    .tooltip-content {
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .tooltip-resource {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0;
+    }
+
+    .tooltip-resource img {
+      width: 16px;
+      height: 16px;
+    }
+
+    .tooltip-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      padding-bottom: 4px;
+    }
+
+    .tooltip-cost {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
   </style>
   <!-- Windows el yazısı fontları için -->
   <link href="https://fonts.googleapis.com/css2?family=Segoe+Print&display=swap" rel="stylesheet">
 
-<audio id="themeMusic1" loop>
-  <source src="assets/sounds/main_theme1.mp3" type="audio/mpeg">
-</audio>
-<audio id="themeMusic2" loop>
-  <source src="assets/sounds/main_theme2.mp3" type="audio/mpeg">
-</audio>
+  <!-- Müzik dosyaları -->
+  <audio id="themeMusic1" loop>
+    <source src="assets/sounds/main_theme1.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="themeMusic2" loop>
+    <source src="assets/sounds/main_theme2.mp3" type="audio/mpeg">
+  </audio>
 
+  <!-- YENİ: Ses efektleri -->
+  <audio id="buildSound" preload="auto">
+    <source src="assets/sounds/build.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="houseSound" preload="auto">
+    <source src="assets/sounds/house.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="stonemasonSound" preload="auto">
+    <source src="assets/sounds/stonemason.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="lumberSound" preload="auto">
+    <source src="assets/sounds/lumber.mp3" type="audio/mpeg">
+  </audio>
 </head>
 <body>
   <!-- YENİ: Loading Screen -->
@@ -295,6 +352,9 @@
     </div>
     <div class="game-hint">Kaynakları topla, binalar inşa et, köyünü büyüt!</div>
   </div>
+
+  <!-- YENİ: Tooltip container -->
+  <div id="tooltip"></div>
 
   <canvas id="game"></canvas>
   <div id="topbar">
@@ -420,6 +480,37 @@
     let musicVolume = 0.5; // Varsayılan ses seviyesi (%50)
     let isMuted = false;
 
+    // YENİ: Ses efektleri değişkenleri
+    let soundEffectsEnabled = true;
+    let effectsVolume = 0.7; // Efekt ses seviyesi
+
+    // YENİ: Ses efekti çalma fonksiyonu
+    function playSoundEffect(soundId) {
+      if (!soundEffectsEnabled) return;
+      
+      const sound = document.getElementById(soundId);
+      if (sound) {
+        sound.volume = effectsVolume;
+        sound.currentTime = 0; // Sesi başa sar
+        sound.play().catch(error => {
+          console.log("Ses efekti çalınamadı:", error);
+        });
+      }
+    }
+
+    // YENİ: Ses efektlerini güncelleme fonksiyonu
+    function updateSoundEffects() {
+      const buildSound = document.getElementById('buildSound');
+      const houseSound = document.getElementById('houseSound');
+      const stonemasonSound = document.getElementById('stonemasonSound');
+      const lumberSound = document.getElementById('lumberSound');
+      
+      if (buildSound) buildSound.volume = effectsVolume;
+      if (houseSound) houseSound.volume = effectsVolume;
+      if (stonemasonSound) stonemasonSound.volume = effectsVolume;
+      if (lumberSound) lumberSound.volume = effectsVolume;
+    }
+
     function startGameMusic() {
       if (isMusicPlaying) return;
       
@@ -516,6 +607,7 @@
         // Ses seviyesi değiştiğinde
         volumeSlider.addEventListener('input', function() {
             musicVolume = this.value / 100;
+            effectsVolume = this.value / 100; // YENİ: Efekt sesleri de aynı seviyede
             updateVolume();
             volumePercent.textContent = this.value + '%';
         });
@@ -523,6 +615,7 @@
         // Sessiz butonu
         muteBtn.addEventListener('click', function() {
             isMuted = !isMuted;
+            soundEffectsEnabled = !isMuted; // YENİ: Müzik sessizse efektler de sessiz
             updateVolume();
             muteBtn.textContent = isMuted ? '🔇' : '🔈';
         });
@@ -533,6 +626,7 @@
                 // M tuşu: Sessiz/aç
                 e.preventDefault();
                 isMuted = !isMuted;
+                soundEffectsEnabled = !isMuted; // YENİ: Müzik sessizse efektler de sessiz
                 updateVolume();
                 muteBtn.textContent = isMuted ? '🔇' : '🔈';
             } else if (e.key === 'ArrowUp' && e.ctrlKey) {
@@ -540,6 +634,7 @@
                 e.preventDefault();
                 volumeSlider.value = Math.min(100, parseInt(volumeSlider.value) + 10);
                 musicVolume = volumeSlider.value / 100;
+                effectsVolume = volumeSlider.value / 100; // YENİ: Efekt sesleri de aç
                 updateVolume();
                 volumePercent.textContent = volumeSlider.value + '%';
             } else if (e.key === 'ArrowDown' && e.ctrlKey) {
@@ -547,6 +642,7 @@
                 e.preventDefault();
                 volumeSlider.value = Math.max(0, parseInt(volumeSlider.value) - 10);
                 musicVolume = volumeSlider.value / 100;
+                effectsVolume = volumeSlider.value / 100; // YENİ: Efekt sesleri de kıs
                 updateVolume();
                 volumePercent.textContent = volumeSlider.value + '%';
             }
@@ -567,17 +663,140 @@
                 music2.volume = musicVolume;
             }
         }
+        
+        // YENİ: Efekt seslerini de güncelle
+        updateSoundEffects();
+    }
+
+    // YENİ: Tooltip sistemi
+    const buildingCosts = {
+        'house1': { wood: 50 },
+        'house2': { wood: 50 },
+        'lumberhouse': { wood: 50 },
+        'hunterhouse': { wood: 50 },
+        'stonehouse': { wood: 75 }
+    };
+
+    function setupTooltips() {
+        const tooltip = document.getElementById('tooltip');
+        const buttons = [
+            { id: 'buildHouseBtn', type: 'house1', name: 'Ev' },
+            { id: 'buildLumberhouseBtn', type: 'lumberhouse', name: 'Oduncu Evi' },
+            { id: 'buildHunterhouseBtn', type: 'hunterhouse', name: 'Avcı Evi' },
+            { id: 'buildStonehouseBtn', type: 'stonehouse', name: 'Taş Ocağı' }
+        ];
+
+        buttons.forEach(button => {
+            const element = document.getElementById(button.id);
+            if (!element) return;
+
+            element.addEventListener('mouseenter', function(e) {
+                const cost = buildingCosts[button.type];
+                showTooltip(e, button.name, cost);
+            });
+
+            element.addEventListener('mousemove', function(e) {
+                updateTooltipPosition(e);
+            });
+
+            element.addEventListener('mouseleave', function() {
+                hideTooltip();
+            });
+        });
+    }
+
+    function showTooltip(event, buildingName, cost) {
+        const tooltip = document.getElementById('tooltip');
+        
+        let html = `<div class="tooltip-title">${buildingName}</div>`;
+        html += '<div class="tooltip-cost">';
+        
+        if (cost.wood) {
+            html += `<div class="tooltip-resource">
+                        <img src="assets/icons/odun_icon.png" alt="Odun">
+                        <span>${cost.wood} Odun</span>
+                     </div>`;
+        }
+        
+        if (cost.stone) {
+            html += `<div class="tooltip-resource">
+                        <img src="assets/icons/tas_icon.png" alt="Taş">
+                        <span>${cost.stone} Taş</span>
+                     </div>`;
+        }
+        
+        if (cost.food) {
+            html += `<div class="tooltip-resource">
+                        <img src="assets/icons/et_icon.png" alt="Yiyecek">
+                        <span>${cost.food} Yiyecek</span>
+                     </div>`;
+        }
+        
+        html += '</div>';
+        
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+        updateTooltipPosition(event);
+    }
+
+    function updateTooltipPosition(event) {
+        const tooltip = document.getElementById('tooltip');
+        const x = event.clientX + 10;
+        const y = event.clientY + 10;
+        
+        // Ekran sınırlarını kontrol et
+        const maxX = window.innerWidth - tooltip.offsetWidth - 10;
+        const maxY = window.innerHeight - tooltip.offsetHeight - 10;
+        
+        tooltip.style.left = Math.min(x, maxX) + 'px';
+        tooltip.style.top = Math.min(y, maxY) + 'px';
+    }
+
+    function hideTooltip() {
+        const tooltip = document.getElementById('tooltip');
+        tooltip.style.display = 'none';
+    }
+
+    // YENİ: Kamera merkezleme fonksiyonu
+    function centerCameraOnTown() {
+        const townCenter = { x: 10, y: 10 };
+        const screenCenter = isoToScreen(townCenter.x, townCenter.y);
+        
+        // Kamera pozisyonunu, kasaba merkezini ekranın ortasına gelecek şekilde ayarla
+        S.cam.x = screenCenter.x - canvas.width / 2;
+        S.cam.y = screenCenter.y - canvas.height / 2;
+        
+        console.log("Kamera merkeze yerleştirildi:", S.cam.x, S.cam.y);
     }
 
     window.addEventListener('load', function() {
-      simulateLoading();
-      setTimeout(() => {
-          setupVolumeControls();
-      }, 2000); // Loading ekranından sonra
+        simulateLoading();
+        setTimeout(() => {
+            setupVolumeControls();
+            setupTooltips(); // YENİ: Tooltip sistemini başlat
+            
+            // YENİ: Loading ekranı kapandıktan sonra kamerayı merkeze al
+            const checkLoading = setInterval(() => {
+                if (loadingScreen.style.display === 'none') {
+                    centerCameraOnTown();
+                    clearInterval(checkLoading);
+                }
+            }, 100);
+        }, 2000);
+    });
+
+    // YENİ: Canvas boyutu değişince de kamerayı merkezle
+    window.addEventListener('resize', function() {
+        setTimeout(centerCameraOnTown, 100);
     });
 
     const canvas=document.getElementById('game');
     const ctx=canvas.getContext('2d');
+
+    // YENİ: Kenardan kamera hareketi için değişken
+    const EDGE_SCROLL_MARGIN = 50; // Piksel cinsinden kenar mesafesi
+    const EDGE_SCROLL_SPEED = 15; // Kamera kaydırma hızı
+
     let S={
       buildMode: null,
       cam: {x:0,y:0,z:1},
@@ -610,6 +829,44 @@
 
     function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
     window.addEventListener('resize',resize); resize();
+
+    // YENİ: Kenardan kamera hareketi fonksiyonu
+    function updateEdgeScroll() {
+        const mouseX = S.mouse.x;
+        const mouseY = S.mouse.y;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
+        // Mouse ekranın dışındaysa veya loading ekranı gösteriliyorsa hareket etme
+        if (mouseX < 0 || mouseX > canvasWidth || mouseY < 0 || mouseY > canvasHeight || 
+            loadingScreen.style.display !== 'none') {
+            return;
+        }
+        
+        let scrollX = 0;
+        let scrollY = 0;
+        
+        // Sol kenar
+        if (mouseX < EDGE_SCROLL_MARGIN) {
+            scrollX = -EDGE_SCROLL_SPEED;
+        }
+        // Sağ kenar
+        else if (mouseX > canvasWidth - EDGE_SCROLL_MARGIN) {
+            scrollX = EDGE_SCROLL_SPEED;
+        }
+        
+        // Üst kenar
+        if (mouseY < EDGE_SCROLL_MARGIN) {
+            scrollY = -EDGE_SCROLL_SPEED;
+        }
+        // Alt kenar
+        else if (mouseY > canvasHeight - EDGE_SCROLL_MARGIN) {
+            scrollY = EDGE_SCROLL_SPEED;
+        }
+        
+        S.cam.x += scrollX;
+        S.cam.y += scrollY;
+    }
 
     // Ağaç resimlerini yükle
     const treeImages = {
@@ -935,12 +1192,6 @@
                 48*S.cam.z,
                 48*S.cam.z
             );
-        } else {
-            ctx.font=`${24*S.cam.z}px serif`;
-            ctx.textAlign='center'; 
-            ctx.textBaseline='middle';
-            ctx.fillStyle = '#4CAF50';
-            ctx.fillText('🌲', sx + shakeX, sy-4 + shakeY);
         }
 
         if(S.selection.has('tree_' + S.trees.indexOf(tree))) {
@@ -1090,8 +1341,8 @@
             const moveAngle = Math.atan2(dy, dx);
             deer.direction = Math.abs(moveAngle) < Math.PI/2 ? 1 : -1;
             
-            const moveX = (dx / dist) * 0.015;
-            const moveY = (dy / dist) * 0.015;
+            const moveX = (dx / dist) * 0.03;
+            const moveY = (dy / dist) * 0.03;
             
             deer.x += moveX;
             deer.y += moveY;
@@ -1351,13 +1602,9 @@
 
     function nextId(){ S.uid+=1; return S.uid; }
 
-    // Kasaba merkezini ekranın ortasına getir
-    const townCenter = { x: 10, y: 10 };
-    const screenCenter = isoToScreen(townCenter.x, townCenter.y);
-
-    // Kamera pozisyonunu, kasaba merkezini ekranın ortasına gelecek şekilde ayarla
-    S.cam.x = screenCenter.x - canvas.width / 2;
-    S.cam.y = screenCenter.y - canvas.height / 2;
+    // KAMERA BAŞLANGIÇ POZİSYONU - centerCameraOnTown() FONKSİYONU BUNU YÖNETECEK
+    S.cam.x = 0;
+    S.cam.y = 0;
 
     // DEĞİŞTİRİLDİ: Capslock'tan etkilenmeyen tuş kontrolü
     window.addEventListener('keydown',e=>{ 
@@ -1459,6 +1706,9 @@
             });
             S.res.wood-=cost;
             updateTopBar();
+            
+            // YENİ: Bina yerleştirme sesi
+            playSoundEffect('buildSound');
           }
           S.buildMode=null;
           return;
@@ -2102,6 +2352,15 @@
             if(building.constructionProgress >= 100) {
               building.isUnderConstruction = false;
               
+              // YENİ: Bina tamamlanma sesleri
+              if (building.kind === 'house1' || building.kind === 'house2') {
+                playSoundEffect('houseSound');
+              } else if (building.kind === 'stonehouse') {
+                playSoundEffect('stonemasonSound');
+              } else if (building.kind === 'lumberhouse') {
+                playSoundEffect('lumberSound');  // YENİ: Oduncu evi sesi
+              }
+              
               activeWorkers.forEach(workerId => {
                 const worker = S.entities.find(w => w.id === workerId);
                 if(worker) worker.isConstructing = null;
@@ -2528,6 +2787,9 @@
         }
       }
 
+      // YENİ: Kenar kaydırma kontrolü
+      updateEdgeScroll();
+      
       const camSpeed=10;
       // DEĞİŞTİRİLDİ: Capslock'tan etkilenmeyen tuş kontrolleri
       if(S.keys['w']||S.keys['arrowup']) S.cam.y-=camSpeed;
@@ -2669,13 +2931,7 @@
                 48*S.cam.z,
                 48*S.cam.z
               );
-            } else {
-              ctx.font=`${48*S.cam.z}px serif`;
-              ctx.textAlign='center'; 
-              ctx.textBaseline='middle';
-              ctx.fillStyle = '#888888';
-              ctx.fillText('🪨', sx, sy-4);
-            }
+            } 
 
             if(S.selection.has('stone_' + S.stones.indexOf(stone))) {
               ctx.strokeStyle = 'cyan';
@@ -2689,7 +2945,7 @@
             const deer = obj.data;
             
             if(deer.isDead) {
-              // Ölü geyik - görsel veya emoji
+              // Ölü geyik - görsel
               if(deerImages.dead && deerImages.dead.complete) {
                 ctx.save();
                 // Ölü geyik için yön değiştirme gerekmez
@@ -2701,13 +2957,7 @@
                   48*S.cam.z
                 );
                 ctx.restore();
-              } else {
-                ctx.font=`${24*S.cam.z}px serif`;
-                ctx.textAlign='center'; 
-                ctx.textBaseline='middle';
-                ctx.fillStyle = '#666666';
-                ctx.fillText('💀', sx, sy-4);
-              }
+              } 
 
               // Et çubuğu - YUKARI KALDIRILDI
               const meatPercent = (deer.meat / deer.maxMeat) * 100;
@@ -2718,7 +2968,7 @@
               ctx.fillStyle = '#FF9800';
               ctx.fillRect(sx - barWidth/2, sy - 50*S.cam.z, barWidth * (meatPercent/100), barHeight);
             } else {
-              // Canlı geyik - görsel veya emoji
+              // Canlı geyik - görsel 
               if(deerImages.alive && deerImages.alive.complete) {
                 ctx.save();
                 // Geyiğin yönüne göre görseli yansıt
@@ -2736,13 +2986,7 @@
                   48*S.cam.z
                 );
                 ctx.restore();
-              } else {
-                ctx.font=`${48*S.cam.z}px serif`;
-                ctx.textAlign='center'; 
-                ctx.textBaseline='middle';
-                ctx.fillStyle = deer.state === 'idle' ? '#D2691E' : '#8B4513';
-                ctx.fillText('🦌', sx, sy-4);
-              }
+              } 
 
               // Can çubuğu - YUKARI KALDIRILDI
               const healthPercent = (deer.health / deer.maxHealth) * 100;
@@ -2808,17 +3052,7 @@
                 buildingWidth*S.cam.z,
                 buildingHeight*S.cam.z
               );
-            } else {
-              // Görsel yüklenmemişse emoji kullan
-              ctx.font=`${48*S.cam.z}px serif`;
-              ctx.textAlign='center'; 
-              ctx.textBaseline='middle';
-              if(building.kind==='town') ctx.fillText('🏛️', sx, sy-4);
-              else if(building.kind==='house1' || building.kind==='house2') ctx.fillText('🏠', sx, sy-4);
-              else if(building.kind==='lumberhouse') ctx.fillText('⛺', sx, sy-4);
-              else if(building.kind==='hunterhouse') ctx.fillText('🛖', sx, sy-4);
-              else if(building.kind==='stonehouse') ctx.fillText('🏭', sx, sy-4);
-            }
+            } 
 
             // DEĞİŞTİRİLDİ: Sadece inşaat halindeki binalarda inşaat barı göster
             if(building.isUnderConstruction) {
@@ -2970,18 +3204,7 @@
             buildWidth*S.cam.z,
             buildHeight*S.cam.z
           );
-        } else {
-          // Görsel yüklenmemişse emoji kullan
-          ctx.font=`${48*S.cam.z}px serif`;
-          ctx.textAlign='center'; 
-          ctx.textBaseline='middle';
-          // DEĞİŞTİRİLDİ: İnşa edilemezse kırmızı renk
-          ctx.fillStyle=canBuild ? 'rgba(100,255,100,0.5)' : 'rgba(255,100,100,0.7)';
-          if(S.buildMode==='house1' || S.buildMode==='house2') ctx.fillText('🏠',sx,sy-4);
-          if(S.buildMode==='lumberhouse') ctx.fillText('⛺',sx,sy-4);
-          if(S.buildMode==='hunterhouse') ctx.fillText('🛖',sx,sy-4);
-          if(S.buildMode==='stonehouse') ctx.fillText('🏭',sx,sy-4);
-        }
+        } 
         
         ctx.globalAlpha = 1.0;
       }
@@ -3006,10 +3229,10 @@
             ctx.closePath();
             
             if(S.explored[y][x]) {
-              // Keşfedilmiş ama görünmeyen alan (koyu gri)
+              // Keşfedilmiş ama görünmeyen alan (tamamen opak)
               ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             } else {
-              // Hiç keşfedilmemiş alan (siyah)
+              // Hiç keşfedilmemiş alan (tamamen opak)
               ctx.fillStyle = 'rgba(0, 0, 0, 1)';
             }
             ctx.fill();
