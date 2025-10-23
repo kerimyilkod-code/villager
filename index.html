@@ -607,7 +607,6 @@
         // Ses seviyesi değiştiğinde
         volumeSlider.addEventListener('input', function() {
             musicVolume = this.value / 100;
-            effectsVolume = this.value / 100; // YENİ: Efekt sesleri de aynı seviyede
             updateVolume();
             volumePercent.textContent = this.value + '%';
         });
@@ -615,7 +614,6 @@
         // Sessiz butonu
         muteBtn.addEventListener('click', function() {
             isMuted = !isMuted;
-            soundEffectsEnabled = !isMuted; // YENİ: Müzik sessizse efektler de sessiz
             updateVolume();
             muteBtn.textContent = isMuted ? '🔇' : '🔈';
         });
@@ -634,7 +632,6 @@
                 e.preventDefault();
                 volumeSlider.value = Math.min(100, parseInt(volumeSlider.value) + 10);
                 musicVolume = volumeSlider.value / 100;
-                effectsVolume = volumeSlider.value / 100; // YENİ: Efekt sesleri de aç
                 updateVolume();
                 volumePercent.textContent = volumeSlider.value + '%';
             } else if (e.key === 'ArrowDown' && e.ctrlKey) {
@@ -642,7 +639,6 @@
                 e.preventDefault();
                 volumeSlider.value = Math.max(0, parseInt(volumeSlider.value) - 10);
                 musicVolume = volumeSlider.value / 100;
-                effectsVolume = volumeSlider.value / 100; // YENİ: Efekt sesleri de kıs
                 updateVolume();
                 volumePercent.textContent = volumeSlider.value + '%';
             }
