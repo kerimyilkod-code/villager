@@ -338,6 +338,9 @@
   <audio id="lumberSound" preload="auto">
     <source src="assets/sounds/lumber.mp3" type="audio/mpeg">
   </audio>
+  <audio id="hunterSound" preload="auto">
+    <source src="assets/sounds/hunter.mp3" type="audio/mpeg">
+  </audio>
 </head>
 <body>
   <!-- YENİ: Loading Screen -->
@@ -504,11 +507,13 @@
       const houseSound = document.getElementById('houseSound');
       const stonemasonSound = document.getElementById('stonemasonSound');
       const lumberSound = document.getElementById('lumberSound');
+      const hunterSound = document.getElementById('hunterSound'); 
       
       if (buildSound) buildSound.volume = effectsVolume;
       if (houseSound) houseSound.volume = effectsVolume;
       if (stonemasonSound) stonemasonSound.volume = effectsVolume;
       if (lumberSound) lumberSound.volume = effectsVolume;
+      if (hunterSound) hunterSound.volume = effectsVolume;
     }
 
     function startGameMusic() {
@@ -791,7 +796,7 @@
 
     // YENİ: Kenardan kamera hareketi için değişken
     const EDGE_SCROLL_MARGIN = 50; // Piksel cinsinden kenar mesafesi
-    const EDGE_SCROLL_SPEED = 15; // Kamera kaydırma hızı
+    const EDGE_SCROLL_SPEED = 5;// Kamera kaydırma hızı
 
     let S={
       buildMode: null,
@@ -2355,8 +2360,10 @@
                 playSoundEffect('stonemasonSound');
               } else if (building.kind === 'lumberhouse') {
                 playSoundEffect('lumberSound');  // YENİ: Oduncu evi sesi
+              } else if (building.kind === 'hunterhouse') {
+                playSoundEffect('hunterSound'); // YENİ: Avcı evi sesi
               }
-              
+                      
               activeWorkers.forEach(workerId => {
                 const worker = S.entities.find(w => w.id === workerId);
                 if(worker) worker.isConstructing = null;
