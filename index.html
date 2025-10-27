@@ -20,7 +20,8 @@
     }
     .title{font-weight:700; margin-bottom:8px}
     .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
-    .btn{cursor:pointer; padding:8px; border-radius:10px; text-align:center; background:#222853; border:1px solid rgba(255,255,255,.06); color:var(--ink)}
+    .btn{cursor:pointer; padding:8px; border-radius:10px; text-align:center; background:#222853; border:1px solid rgba(255,255,255,.06); color:var(--ink); transition: all 0.2s ease;}
+    .btn:hover{background:#2a3068; transform: translateY(-1px);}
     #game{position:absolute; inset:0;}
     #hint{position:fixed; left:8px; bottom:8px; font-size:12px; opacity:.9; background:rgba(0,0,0,.25); padding:6px 8px; border-radius:8px}
     
@@ -217,58 +218,160 @@
       margin-bottom: 4px;
     }
 
-    /* YENİ: Ses kontrolü stilleri */
-    #volumeControl {
+    /* YENİ: Menü butonu ve menü stilleri */
+    #menuBtn {
       background: var(--panel-2);
-      padding: 4px 12px;
+      padding: 8px 16px;
       border-radius: 10px;
       border: 1px solid rgba(255,255,255,.04);
+      color: var(--ink);
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
-    }
-
-    #volumeSlider {
-      -webkit-appearance: none;
-      appearance: none;
-      height: 4px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 2px;
-      outline: none;
-      width: 80px;
-      cursor: pointer;
-    }
-
-    #volumeSlider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #4CAF50;
-      cursor: pointer;
-    }
-
-    #volumeSlider::-moz-range-thumb {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #4CAF50;
-      cursor: pointer;
-      border: none;
-    }
-
-    #muteBtn {
-      background: none;
-      border: none;
-      color: var(--ink);
-      cursor: pointer;
-      font-size: 16px;
+      margin-left: auto;
       transition: all 0.2s ease;
     }
 
-    #muteBtn:hover {
-      transform: scale(1.1);
+    #menuBtn:hover {
+      background: #2a3068;
+      transform: translateY(-1px);
+    }
+
+    /* Menü overlay */
+    #menuOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+
+    .menu-container {
+      background: linear-gradient(180deg, var(--panel), #0f1330);
+      border-radius: 20px;
+      padding: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      width: 300px;
+      max-width: 90vw;
+    }
+
+    .menu-title {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      font-weight: bold;
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .menu-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .menu-btn {
+      padding: 15px 20px;
+      background: linear-gradient(180deg, #222853, #1a1f3d);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: var(--ink);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: flex-start;
+    }
+
+    .menu-btn:hover {
+      background: linear-gradient(180deg, #2a3068, #222853);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .menu-btn i {
+      font-size: 1.2rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* Ayarlar menüsü */
+    #settingsMenu {
+      display: none;
+    }
+
+    .settings-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .settings-title {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: #e9ecff;
+      opacity: 0.9;
+    }
+
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .volume-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+    }
+
+    .volume-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+      border: none;
+    }
+
+    .back-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--ink);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.2);
     }
 
     /* YENİ: Tooltip stilleri */
@@ -316,6 +419,8 @@
   </style>
   <!-- Windows el yazısı fontları için -->
   <link href="https://fonts.googleapis.com/css2?family=Segoe+Print&display=swap" rel="stylesheet">
+  <!-- İkonlar için Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
   <!-- Müzik dosyaları -->
   <audio id="themeMusic1" loop>
@@ -356,6 +461,56 @@
     <div class="game-hint">Kaynakları topla, binalar inşa et, köyünü büyüt!</div>
   </div>
 
+  <!-- YENİ: Menü Overlay -->
+  <div id="menuOverlay">
+    <div class="menu-container" id="mainMenu">
+      <div class="menu-title">OYUN MENÜSÜ</div>
+      <div class="menu-buttons">
+        <button class="menu-btn" id="resumeBtn">
+          <i class="fas fa-play"></i>
+          Devam Et
+        </button>
+        <button class="menu-btn" id="newGameBtn">
+          <i class="fas fa-plus-circle"></i>
+          Yeni Oyun
+        </button>
+        <button class="menu-btn" id="saveBtn">
+          <i class="fas fa-save"></i>
+          Oyunu Kaydet
+        </button>
+        <button class="menu-btn" id="loadBtn">
+          <i class="fas fa-folder-open"></i>
+          Oyunu Yükle
+        </button>
+        <button class="menu-btn" id="settingsBtn">
+          <i class="fas fa-cog"></i>
+          Ayarlar
+        </button>
+      </div>
+    </div>
+
+    <!-- Ayarlar Menüsü -->
+    <div class="menu-container" id="settingsMenu">
+      <div class="menu-title">AYARLAR</div>
+      <div class="settings-section">
+        <div class="settings-title">Ses Ayarları</div>
+        <div class="volume-control">
+          <i class="fas fa-volume-up"></i>
+          <input type="range" class="volume-slider" id="menuVolumeSlider" min="0" max="100" value="50">
+          <span id="menuVolumePercent" style="min-width: 40px;">50%</span>
+        </div>
+        <button class="menu-btn" id="muteToggleBtn">
+          <i class="fas fa-volume-mute"></i>
+          Sesi Aç/Kapat
+        </button>
+      </div>
+      <button class="back-btn" id="backToMainBtn">
+        <i class="fas fa-arrow-left"></i>
+        Ana Menüye Dön
+      </button>
+    </div>
+  </div>
+
   <!-- YENİ: Tooltip container -->
   <div id="tooltip"></div>
 
@@ -367,11 +522,10 @@
     <div class="res"><img src="assets/icons/altin_icon.png" class="resource-icon" alt="Altın"><b>Altın</b> <span id="gold">0</span></div>
     <div id="population">👥 <span id="popCur">0</span> / <span id="popMax">0</span></div>
     
-    <!-- YENİ: Ses Kontrolü -->
-    <div id="volumeControl">
-        <button id="muteBtn">🔈</button>
-        <input type="range" id="volumeSlider" min="0" max="100" value="50">
-        <span id="volumePercent" style="font-size: 12px; min-width: 30px;">50%</span>
+    <!-- YENİ: Menü Butonu -->
+    <div id="menuBtn">
+      <i class="fas fa-bars"></i>
+      Menü
     </div>
     
     <div style="margin-left:auto; opacity:.8">RTS Step 6 – Deer Hunting</div>
@@ -468,7 +622,7 @@
 
     </div>
   </aside>
-  <div id="hint">WASD veya Ok Tuşları: Kamera • Scroll: Zoom • Sol Fare: Seçim • Sağ Fare: Seçili birimi hedefe gönder • M: Sessiz • Ctrl+↑/↓: Ses Aç/Kıs</div>
+  <div id="hint">WASD veya Ok Tuşları: Kamera • Scroll: Zoom • Sol Fare: Seçim • Sağ Fare: Seçili birimi hedefe gönder • Delete: Seçili binayı sil • ESC: Menü • Mouse Kenar: Harita Kaydırma</div>
   <script>
     // YENİ: Loading Screen Kontrolü
     const loadingScreen = document.getElementById('loadingScreen');
@@ -486,6 +640,107 @@
     // YENİ: Ses efektleri değişkenleri
     let soundEffectsEnabled = true;
     let effectsVolume = 0.7; // Efekt ses seviyesi
+
+    // YENİ: Menü değişkenleri
+    const menuOverlay = document.getElementById('menuOverlay');
+    const mainMenu = document.getElementById('mainMenu');
+    const settingsMenu = document.getElementById('settingsMenu');
+    const menuBtn = document.getElementById('menuBtn');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const loadBtn = document.getElementById('loadBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const backToMainBtn = document.getElementById('backToMainBtn');
+    const menuVolumeSlider = document.getElementById('menuVolumeSlider');
+    const menuVolumePercent = document.getElementById('menuVolumePercent');
+    const muteToggleBtn = document.getElementById('muteToggleBtn');
+
+    // YENİ: Menü yönetimi
+    function setupMenu() {
+        // Menü butonu
+        menuBtn.addEventListener('click', openMenu);
+        
+        // Menü butonları
+        resumeBtn.addEventListener('click', closeMenu);
+        newGameBtn.addEventListener('click', startNewGame);
+        saveBtn.addEventListener('click', saveGame);
+        loadBtn.addEventListener('click', loadGame);
+        settingsBtn.addEventListener('click', showSettings);
+        backToMainBtn.addEventListener('click', showMainMenu);
+        
+        // Ses kontrolleri
+        menuVolumeSlider.addEventListener('input', function() {
+            musicVolume = this.value / 100;
+            updateVolume();
+            menuVolumePercent.textContent = this.value + '%';
+        });
+        
+        muteToggleBtn.addEventListener('click', function() {
+            isMuted = !isMuted;
+            soundEffectsEnabled = !isMuted;
+            updateVolume();
+            updateMuteButton();
+        });
+        
+        // ESC tuşu ile menü aç/kapa
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (menuOverlay.style.display === 'flex') {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            }
+        });
+        
+        // Menü dışına tıklama ile kapatma
+        menuOverlay.addEventListener('click', function(e) {
+            if (e.target === menuOverlay) {
+                closeMenu();
+            }
+        });
+    }
+
+    function startNewGame() {
+        if (confirm('Yeni oyun başlatmak istediğinize emin misiniz?')) {
+            location.reload();
+        }
+    }
+
+    function openMenu() {
+        menuOverlay.style.display = 'flex';
+        showMainMenu();
+        // Mevcut ses ayarlarını menüye yansıt
+        menuVolumeSlider.value = musicVolume * 100;
+        menuVolumePercent.textContent = Math.round(musicVolume * 100) + '%';
+        updateMuteButton();
+    }
+
+    function closeMenu() {
+        menuOverlay.style.display = 'none';
+    }
+
+    function showMainMenu() {
+        mainMenu.style.display = 'block';
+        settingsMenu.style.display = 'none';
+    }
+
+    function showSettings() {
+        mainMenu.style.display = 'none';
+        settingsMenu.style.display = 'block';
+    }
+
+    function updateMuteButton() {
+        const icon = muteToggleBtn.querySelector('i');
+        if (isMuted) {
+            icon.className = 'fas fa-volume-mute';
+            muteToggleBtn.innerHTML = '<i class="fas fa-volume-mute"></i> Sesi Aç';
+        } else {
+            icon.className = 'fas fa-volume-up';
+            muteToggleBtn.innerHTML = '<i class="fas fa-volume-up"></i> Sesi Kapat';
+        }
+    }
 
     // YENİ: Ses efekti çalma fonksiyonu
     function playSoundEffect(soundId) {
@@ -507,7 +762,7 @@
       const houseSound = document.getElementById('houseSound');
       const stonemasonSound = document.getElementById('stonemasonSound');
       const lumberSound = document.getElementById('lumberSound');
-      const hunterSound = document.getElementById('hunterSound'); 
+      const hunterSound = document.getElementById('hunterSound');
       
       if (buildSound) buildSound.volume = effectsVolume;
       if (houseSound) houseSound.volume = effectsVolume;
@@ -596,58 +851,6 @@
           }, 500);
         }
       }, 300);
-    }
-
-    // YENİ: Ses kontrol fonksiyonları
-    function setupVolumeControls() {
-        const volumeSlider = document.getElementById('volumeSlider');
-        const volumePercent = document.getElementById('volumePercent');
-        const muteBtn = document.getElementById('muteBtn');
-        
-        if (!volumeSlider || !volumePercent || !muteBtn) {
-            console.log("Ses kontrol elementleri bulunamadı");
-            return;
-        }
-        
-        // Ses seviyesi değiştiğinde
-        volumeSlider.addEventListener('input', function() {
-            musicVolume = this.value / 100;
-            updateVolume();
-            volumePercent.textContent = this.value + '%';
-        });
-        
-        // Sessiz butonu
-        muteBtn.addEventListener('click', function() {
-            isMuted = !isMuted;
-            updateVolume();
-            muteBtn.textContent = isMuted ? '🔇' : '🔈';
-        });
-        
-        // Klavye kısayolları
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'm' || e.key === 'M') {
-                // M tuşu: Sessiz/aç
-                e.preventDefault();
-                isMuted = !isMuted;
-                soundEffectsEnabled = !isMuted; // YENİ: Müzik sessizse efektler de sessiz
-                updateVolume();
-                muteBtn.textContent = isMuted ? '🔇' : '🔈';
-            } else if (e.key === 'ArrowUp' && e.ctrlKey) {
-                // Ctrl + Yukarı: Ses aç
-                e.preventDefault();
-                volumeSlider.value = Math.min(100, parseInt(volumeSlider.value) + 10);
-                musicVolume = volumeSlider.value / 100;
-                updateVolume();
-                volumePercent.textContent = volumeSlider.value + '%';
-            } else if (e.key === 'ArrowDown' && e.ctrlKey) {
-                // Ctrl + Aşağı: Ses kıs
-                e.preventDefault();
-                volumeSlider.value = Math.max(0, parseInt(volumeSlider.value) - 10);
-                musicVolume = volumeSlider.value / 100;
-                updateVolume();
-                volumePercent.textContent = volumeSlider.value + '%';
-            }
-        });
     }
 
     // Ses güncelleme fonksiyonu
@@ -773,7 +976,7 @@
     window.addEventListener('load', function() {
         simulateLoading();
         setTimeout(() => {
-            setupVolumeControls();
+            setupMenu();
             setupTooltips(); // YENİ: Tooltip sistemini başlat
             
             // YENİ: Loading ekranı kapandıktan sonra kamerayı merkeze al
@@ -796,7 +999,7 @@
 
     // YENİ: Kenardan kamera hareketi için değişken
     const EDGE_SCROLL_MARGIN = 50; // Piksel cinsinden kenar mesafesi
-    const EDGE_SCROLL_SPEED = 5;// Kamera kaydırma hızı
+    const EDGE_SCROLL_SPEED = 8; // Kamera kaydırma hızı (15'ten 8'e düşürüldü)
 
     let S={
       buildMode: null,
@@ -1389,7 +1592,7 @@
           if (deer.state === 'moving') {
             const dx = deer.tx - deer.x;
             const dy = deer.ty - deer.y;
-            const dist = Math.hypot(dx, dy);
+            const dist = Math.hypot(dx,dy);
             
             if (dist > 0.1) {
               // Alternatif basit çözüm - her hareket adımında yönü güncelle
@@ -1577,6 +1780,110 @@
       return nearest;
     }
 
+    // YENİ: En yakın boşta çalışan işçiyi bulma fonksiyonu - GÜNCELLENDİ
+    function findNearestIdleWorker(x, y) {
+        const allWorkers = S.entities.filter(worker => worker.kind === 'worker');
+        
+        if (allWorkers.length === 0) return null;
+        
+        // Önce boşta olan işçileri bul
+        let idleWorkers = allWorkers.filter(worker => 
+            !worker.isConstructing && 
+            !worker.isChopping && 
+            !worker.isMining && 
+            !worker.isHunting && 
+            !worker.isCollectingMeat && 
+            !worker.isDelivering && 
+            !worker.isDeliveringToBuilding
+        );
+        
+        // Eğer boş işçi yoksa, en yakın işçiyi bul ve görevini iptal et
+        if (idleWorkers.length === 0) {
+            console.log("Boş işçi yok, en yakın işçi görevden alınıyor...");
+            
+            let nearestWorker = allWorkers[0];
+            let minDist = Math.hypot(nearestWorker.x - x, nearestWorker.y - y);
+            
+            for (let i = 1; i < allWorkers.length; i++) {
+                const dist = Math.hypot(allWorkers[i].x - x, allWorkers[i].y - y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearestWorker = allWorkers[i];
+                }
+            }
+            
+            // İşçinin mevcut görevlerini temizle
+            clearWorkerTasks(nearestWorker);
+            return nearestWorker;
+        }
+        
+        // Boş işçi varsa en yakınını bul
+        let nearestIdleWorker = idleWorkers[0];
+        let minDist = Math.hypot(nearestIdleWorker.x - x, nearestIdleWorker.y - y);
+        
+        for (let i = 1; i < idleWorkers.length; i++) {
+            const dist = Math.hypot(idleWorkers[i].x - x, idleWorkers[i].y - y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestIdleWorker = idleWorkers[i];
+            }
+        }
+        
+        return nearestIdleWorker;
+    }
+
+    // YENİ: İşçinin tüm görevlerini temizleme fonksiyonu
+    function clearWorkerTasks(worker) {
+        console.log(`İşçi ${worker.id} görevleri temizleniyor...`);
+        
+        // Ağaç kesme görevini temizle
+        if (worker.isChopping) {
+            const tree = worker.isChopping;
+            tree.choppingWorkers = tree.choppingWorkers.filter(id => id !== worker.id);
+            worker.isChopping = null;
+        }
+        
+        // Taş çıkarma görevini temizle
+        if (worker.isMining) {
+            const stone = worker.isMining;
+            stone.miningWorkers = stone.miningWorkers.filter(id => id !== worker.id);
+            worker.isMining = null;
+        }
+        
+        // Geyik avlama görevini temizle
+        if (worker.isHunting) {
+            const deer = worker.isHunting;
+            deer.huntingWorkers = deer.huntingWorkers.filter(id => id !== worker.id);
+            worker.isHunting = null;
+        }
+        
+        // Et toplama görevini temizle
+        if (worker.isCollectingMeat) {
+            worker.isCollectingMeat = null;
+        }
+        
+        // Teslimat görevini temizle
+        if (worker.isDelivering) {
+            worker.isDelivering = false;
+        }
+        
+        // Binaya teslimat görevini temizle
+        if (worker.isDeliveringToBuilding) {
+            worker.isDeliveringToBuilding = null;
+        }
+        
+        // İnşaat görevini temizle
+        if (worker.isConstructing) {
+            const building = S.entities.find(b => b.id === worker.isConstructing);
+            if (building && building.constructionWorkers) {
+                building.constructionWorkers = building.constructionWorkers.filter(id => id !== worker.id);
+            }
+            worker.isConstructing = null;
+        }
+        
+        console.log(`İşçi ${worker.id} artık boşta`);
+    }
+
     for(let y=0;y<MAP_H;y++){
       S.map[y]=[]; S.walk[y]=[];
       for(let x=0;x<MAP_W;x++){ S.map[y][x]=T_GRASS; S.walk[y][x]=true; }
@@ -1603,11 +1910,55 @@
 
     function nextId(){ S.uid+=1; return S.uid; }
 
+    // YENİ: Seçili binayı silme fonksiyonu
+    function deleteSelectedBuilding() {
+        if (S.selection.size !== 1) return;
+        
+        const selectedId = [...S.selection][0];
+        const selectedEntity = S.entities.find(e => e.id === selectedId);
+        
+        // Sadece binaları sil (worker'ları ve town'u silme)
+        if (selectedEntity && 
+            (selectedEntity.kind === 'house1' || 
+             selectedEntity.kind === 'house2' || 
+             selectedEntity.kind === 'lumberhouse' || 
+             selectedEntity.kind === 'hunterhouse' || 
+             selectedEntity.kind === 'stonehouse')) {
+            
+            // Kaynak iadesi (isteğe bağlı - binanın maliyetinin yarısını iade edelim)
+            let refundAmount = 0;
+            if (selectedEntity.kind === 'house1' || selectedEntity.kind === 'house2' || 
+                selectedEntity.kind === 'lumberhouse' || selectedEntity.kind === 'hunterhouse') {
+                refundAmount = 25; // 50 odunun yarısı
+                S.res.wood += refundAmount;
+            } else if (selectedEntity.kind === 'stonehouse') {
+                refundAmount = 37; // 75 odunun yarısı
+                S.res.wood += refundAmount;
+            }
+            
+            // Binayı entity listesinden kaldır
+            const index = S.entities.findIndex(e => e.id === selectedId);
+            if (index > -1) {
+                S.entities.splice(index, 1);
+            }
+            
+            // Seçimi temizle
+            S.selection.clear();
+            
+            // UI'ı güncelle
+            updateTopBar();
+            updatePopulation();
+            updateSelectionCard();
+            
+            console.log(`Bina silindi. ${refundAmount} odun iade edildi.`);
+        }
+    }
+
     // KAMERA BAŞLANGIÇ POZİSYONU - centerCameraOnTown() FONKSİYONU BUNU YÖNETECEK
     S.cam.x = 0;
     S.cam.y = 0;
 
-    // DEĞİŞTİRİLDİ: Capslock'tan etkilenmeyen tuş kontrolü
+    // DEĞİŞTİRİLDİ: Capslock'tan etkilenmeyen tuş kontrolü - Delete tuşu eklendi
     window.addEventListener('keydown',e=>{ 
       const key = e.key.toLowerCase();
       S.keys[key]=true; 
@@ -1617,6 +1968,11 @@
       if (e.key === 'ArrowDown') S.keys['arrowdown'] = true;
       if (e.key === 'ArrowLeft') S.keys['arrowleft'] = true;
       if (e.key === 'ArrowRight') S.keys['arrowright'] = true;
+      
+      // YENİ: Delete tuşu ile bina silme
+      if (e.key === 'Delete') {
+        deleteSelectedBuilding();
+      }
     });
     
     window.addEventListener('keyup',e=>{ 
@@ -1694,22 +2050,32 @@
           
           if(canBuild && S.res.wood>=cost){
             const newId=nextId();
-            // Artık rastgele seçime gerek yok, S.buildMode direkt kullan
-            S.entities.push({
+            // YENİ BİNAYI OLUŞTUR
+            const newBuilding = {
               id:newId, 
-              kind: S.buildMode, // Burada direkt S.buildMode'u kullan
+              kind: S.buildMode,
               x, y, 
               health:100, 
               maxHealth:100,
               constructionProgress:0,
               isUnderConstruction:true,
               constructionWorkers:[]
-            });
+            };
+            S.entities.push(newBuilding);
             S.res.wood-=cost;
             updateTopBar();
             
             // YENİ: Bina yerleştirme sesi
             playSoundEffect('buildSound');
+            
+            // YENİ: EN YAKIN BOŞTA OLAN İŞÇİYİ BUL VE HEMEN İNŞAATA GÖNDER
+            const nearestIdleWorker = findNearestIdleWorker(x, y);
+            if (nearestIdleWorker) {
+              sendWorkersToConstruction(newBuilding, [nearestIdleWorker]);
+              console.log(`İşçi ${nearestIdleWorker.id} hemen inşaata gönderildi!`);
+            } else {
+              console.log("Boşta işçi bulunamadı, bina bekliyor...");
+            }
           }
           S.buildMode=null;
           return;
@@ -2359,11 +2725,11 @@
               } else if (building.kind === 'stonehouse') {
                 playSoundEffect('stonemasonSound');
               } else if (building.kind === 'lumberhouse') {
-                playSoundEffect('lumberSound');  // YENİ: Oduncu evi sesi
+                playSoundEffect('lumberSound');
               } else if (building.kind === 'hunterhouse') {
                 playSoundEffect('hunterSound'); // YENİ: Avcı evi sesi
               }
-                      
+              
               activeWorkers.forEach(workerId => {
                 const worker = S.entities.find(w => w.id === workerId);
                 if(worker) worker.isConstructing = null;
@@ -3290,6 +3656,7 @@
       
       localStorage.setItem('villagerSave', JSON.stringify(gameData));
       alert('Oyun kaydedildi!');
+      closeMenu();
   }
 
   function loadGame() {
@@ -3320,70 +3687,11 @@
           updateSelectionCard();
           
           alert('Oyun yüklendi!');
+          closeMenu();
       } catch (error) {
           alert('Oyun yüklenirken hata oluştu: ' + error.message);
       }
   }
-
-  // Kaydet/Yükle butonlarını oluştur
-  function createSaveLoadButtons() {
-      const buttonContainer = document.createElement('div');
-      buttonContainer.style.position = 'fixed';
-      buttonContainer.style.bottom = '10px';
-      buttonContainer.style.left = '50%';
-      buttonContainer.style.transform = 'translateX(-50%)';
-      buttonContainer.style.display = 'flex';
-      buttonContainer.style.gap = '10px';
-      buttonContainer.style.zIndex = '100';
-      
-      const saveBtn = document.createElement('button');
-      saveBtn.textContent = '💾 Oyunu Kaydet';
-      saveBtn.style.padding = '8px 16px';
-      saveBtn.style.background = 'linear-gradient(180deg, #4CAF50, #45a049)';
-      saveBtn.style.color = 'white';
-      saveBtn.style.border = 'none';
-      saveBtn.style.borderRadius = '5px';
-      saveBtn.style.cursor = 'pointer';
-      saveBtn.style.fontWeight = 'bold';
-      saveBtn.onclick = saveGame;
-      
-      const loadBtn = document.createElement('button');
-      loadBtn.textContent = '📂 Oyunu Yükle';
-      loadBtn.style.padding = '8px 16px';
-      loadBtn.style.background = 'linear-gradient(180deg, #2196F3, #0b7dda)';
-      loadBtn.style.color = 'white';
-      loadBtn.style.border = 'none';
-      loadBtn.style.borderRadius = '5px';
-      loadBtn.style.cursor = 'pointer';
-      loadBtn.style.fontWeight = 'bold';
-      loadBtn.onclick = loadGame;
-      
-      const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = '🗑️ Kaydı Sil';
-      deleteBtn.style.padding = '8px 16px';
-      deleteBtn.style.background = 'linear-gradient(180deg, #f44336, #d32f2f)';
-      deleteBtn.style.color = 'white';
-      deleteBtn.style.border = 'none';
-      deleteBtn.style.borderRadius = '5px';
-      deleteBtn.style.cursor = 'pointer';
-      deleteBtn.style.fontWeight = 'bold';
-      deleteBtn.onclick = () => {
-          if (confirm('Kayıtlı oyunu silmek istediğinize emin misiniz?')) {
-              localStorage.removeItem('villagerSave');
-              alert('Kayıt silindi!');
-          }
-      };
-      
-      buttonContainer.appendChild(saveBtn);
-      buttonContainer.appendChild(loadBtn);
-      buttonContainer.appendChild(deleteBtn);
-      document.body.appendChild(buttonContainer);
-  }
-
-  // Sayfa yüklendiğinde butonları oluştur
-  window.addEventListener('load', () => {
-      setTimeout(createSaveLoadButtons, 1000); // Loading ekranından sonra
-  });
 
   </script>
 </body>
